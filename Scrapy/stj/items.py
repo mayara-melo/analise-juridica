@@ -1,0 +1,20 @@
+from scrapy.item import Item, Field
+
+class StjItem(Item):
+    acordaoId   = Field()
+    uf          = Field()
+ #   tipo        = Field()
+    relator     = Field()
+ #   orgaoJulg   = Field()
+    dataJulg    = Field()
+#    fontePublic = Field()
+    dataPublic  = Field()
+    ementa      = Field()
+    decisao     = Field()
+    citacoes    = Field()
+    filename    = Field()
+#    sucessivos  = Field()
+#    legislacao  = Field()
+#    observacao  = Field()
+#    acordaos    = Field()
+#    tudo        = Field()
