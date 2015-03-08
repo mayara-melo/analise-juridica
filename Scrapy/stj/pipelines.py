@@ -4,7 +4,6 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 
-from scrapy import signals
 from scrapy.contrib.exporter import XmlItemExporter
 
 
