@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 class STJSpider(BaseSpider):
 
-    name = 'stj_acordaos'
+    name = 'stj'
     
     def nextDay( self, cur_date):
         y = int(cur_date[0:4])

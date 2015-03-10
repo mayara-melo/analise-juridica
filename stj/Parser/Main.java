@@ -38,7 +38,7 @@ public class Main {
             return;
         }
         
-        total = fIndex - iIndex+1;
+        total = fIndex - iIndex + 1;
 	
         String fileName = "";
         for (Integer j = iIndex; j <= fIndex; j++ ) {
