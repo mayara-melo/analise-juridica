@@ -42,8 +42,15 @@ class STFSpider(BaseSpider):
                     break
         return sections
 
-    def parseObservSection( self, text):
-        print text
+    def parseObservSection( self, sel):
+        txt = self.parseItem(sel.extract())
+        quotes = re.search("Ac.rd.os citados\s*:\s*([^\.]*)", txt)
+        if quotes:
+            quotes = (quotes.group(1)).split(', ')
+#            map( replace(re.compile('[^\s]'), '')
+            print quotes
+
+        
 
     def parse( self, response ):
         print "\n\n\n\n"
@@ -75,10 +82,8 @@ class STFSpider(BaseSpider):
             ementa = self.parseItem( doc.xpath('strong[1]/p/text()').extract()[1])
 
             sectHeaders = doc.xpath('p/strong').extract()[3:]
-            print len(sectHeaders)
-            print sectHeaders
 #            map(self.parseItem, docHeaders)
-            sectBody = doc.xpath('pre').extract()[2:]
+            sectBody = doc.xpath('pre')[2:]
 #            map( self.parseItem, sectBody)
             possHeaders = [
                 '**Decis',     # strong/p/strong/text() sec strong/p
@@ -87,21 +92,21 @@ class STFSpider(BaseSpider):
                 '**Observa',  # p/strong/text() sec next pre
                 '**Doutrina'    # p/strong/text() sec next pre
             ]
-                
+            sections = {}                
             sections = self.orderSections(  sectHeaders, sectBody, possHeaders)
             decision = tags = laws = obs = doutrines = ''
-            print sections
             keys = sections.keys()
             if 0 in keys:
-                decision = self.parseItem(sections[0])
+                decision = self.parseItem(sections[0].extract())
             if 1 in keys:
-                tags = self.parseItem(sections[1])
+                tags = self.parseItem(sections[1].extract())
             if 2 in keys:
-                laws = self.parseItem(sections[2])
+                laws = self.parseItem(sections[2].extract())
             if 3 in keys:
-                obs = self.parseItem(sections[3])
+                obs = self.parseItem(sections[3].extract())
+                self.parseObservSection( sections[3])
             if 4 in keys:
-                doutrines = self.parseItem(sections[4])
+                doutrines = self.parseItem(sections[4].extract())
             print '-------------------------------------------------------------'
             print 'relator: '+relator
             print '\nId: '+acordaoId
