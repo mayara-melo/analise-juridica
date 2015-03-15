@@ -2,7 +2,7 @@ import subprocess
 import re
 from datetime import datetime, timedelta
 
-FILE_NDOCS = 'ndocs.xml'
+FILE_NDOCS = 'temp'
 FILE_UPDATER_SETTINGS = '../updater_settings'
 
 def nextDay( cur_date):
@@ -37,14 +37,13 @@ fdateArg = "fDate="+fDate
 
 # Extrai o numero de acordaos encontrados 
 subprocess.call(["scrapy", "crawl", "stf_get_nacordaos",
-                 "-a", idateArg,"-a", fdateArg, "-o", FILE_NDOCS])
+                 "-a", idateArg,"-a", fdateArg])
 
 with open(FILE_NDOCS, 'r+') as f:
-    buf = f.read()
+    nacordaos = int( f.readline())
     f.seek(0)
     f.truncate()
     f.close()
-nacordaos = int(re.search('<nacordaos>([0-9]+)', buf).group(1))
 
 print("iIndex: "+str(iIndex))
 print("fIndex: "+str(fIndex))
@@ -54,13 +53,12 @@ totPages = nacordaos/10+1
 for i in range (1, totPages+1):
     pageArg = "page="+str(i)
     indexArg = "index="+str(fIndex)
-    subprocess.call(["scrapy", "crawl", "stf",
+    subprocess.call(["scrapy", "crawl", "stfSpider",
                     "-a", idateArg, 
                     "-a", fdateArg,
                     "-a", pageArg,
-                    "-a", indexArg,
-                    "-o", FILE_NDOCS,
-                    "--nolog"]
+                    "-a", indexArg]
+#                    "--nolog"]
                    )
     fIndex += 10
 

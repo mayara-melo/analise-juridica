@@ -5,7 +5,7 @@ import html2text
 import re
 from stf.items import StfItem
 
-
+FILE_NDOCS='temp'
 class STFSpider(BaseSpider):
 
     name = 'stf_get_nacordaos'
@@ -38,5 +38,7 @@ class STFSpider(BaseSpider):
             ndocs = str(r.group(0))
         else:
             ndocs = '0'
+        with open(FILE_NDOCS, 'w') as f:
+            f.write( ndocs)
+            f.close() 
         print ndocs + "documentos encontrados\n"
-    	yield StfItem( nacordaos = ndocs)
