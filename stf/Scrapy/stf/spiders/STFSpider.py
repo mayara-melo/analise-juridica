@@ -2,6 +2,7 @@
 from scrapy.selector import Selector
 from scrapy.spider import BaseSpider
 import html2text
+from stf.items import StfItem
 import re
 
 def findId( text):
@@ -13,10 +14,15 @@ class STFSpider(BaseSpider):
     name = 'stfSpider'
 
     def __init__ ( self, iDate, fDate, page, index):
-        print 'INIT SPIDERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n\n\n\n\n\n\n\n\n'
         self.domain = 'stf.jus.br'
+        self.ids = {}
+        self.relators = {}
+        self.ufs = {}
+        self.dataJulgs = {}
+        self.tags = {}
+        self.partesType = {}
         self.index = int(index)
-        #self.fIndex = int(index)
+        self.fIndex = int(index)
         self.start_urls = [
             'http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?'+
             's1=%28%40JULG+%3E%3D+'+
@@ -42,16 +48,46 @@ class STFSpider(BaseSpider):
                     break
         return sections
 
-    def parseObservSection( self, sel):
-        txt = self.parseItem(sel.extract())
-        quotes = re.search("Ac.rd.os citados\s*:\s*([^\.]*)", txt)
-        if quotes:
-            quotes = (quotes.group(1)).split(', ')
-#            map( replace(re.compile('[^\s]'), '')
-            print quotes
+    def getAcordaosQuotes( self, txt):
+        quotes = []
+        data = re.search("Ac.rd.o[s]? citado[s]?\s*:\s*([^\.]*)", txt)
+        if data:
+            data = (data.group(1)).replace(',',' ')
+            data = data.split(' ')
+            for q in data:
+                q = q.replace('(', '')
+                q = q.replace(')', '')
+                q = q.replace('\r','')
+                q = q.replace('\n','')
+                q = q.replace(' ', '')
+                q = q.replace('-', ' ')
+                if q: 
+                    quotes.append( q) 
+        return quotes
 
+#    def getResult( self, txt):
+#        result = ''
+#        print txt
+#        txt = txt.split('\r\n')
+#        print '------------------'
+#        dataHeaders = [
+#            'Vota',
+#            'Resultado:',
+#            'Veja:',
+#            ''
+#        ]
+#        temp = re.search('Resultado:\s*(.*)\r\n', txt[0])
+#        if temp:
+#            print temp.group(1)
+#        
+    #   temp = re.search('Resultado:\s*(.*)', txt)
+   #     if temp:
+  #          temp = a.group(1)
+ #           temp = re.search('(.*)(Ac.rd.o[s]? citado)', temp)
+ #       if temp:
+  #          temp
+   #         print result
         
-
     def parse( self, response ):
         print "\n\n\n\n"
         print 'parse method\n\n'
@@ -65,7 +101,9 @@ class STFSpider(BaseSpider):
             '/div[@class="abasAcompanhamento"]'+
             '/div[@class="processosJurisprudenciaAcordaos"]'
         )
+        i=0
         for doc in body:
+            print 'index: '+str( i)
             title = doc.xpath('p[1]/strong/text()').extract()
             titleLine = re.match('\s*([\w -]+)\/\s([A-Za-z]{2}).*', title[0])
             acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
@@ -92,9 +130,8 @@ class STFSpider(BaseSpider):
                 '**Observa',  # p/strong/text() sec next pre
                 '**Doutrina'    # p/strong/text() sec next pre
             ]
-            sections = {}                
             sections = self.orderSections(  sectHeaders, sectBody, possHeaders)
-            decision = tags = laws = obs = doutrines = ''
+            decision = tags = laws = obs = doutrines = quotes = result =''
             keys = sections.keys()
             if 0 in keys:
                 decision = self.parseItem(sections[0].extract())
@@ -104,39 +141,76 @@ class STFSpider(BaseSpider):
                 laws = self.parseItem(sections[2].extract())
             if 3 in keys:
                 obs = self.parseItem(sections[3].extract())
-                self.parseObservSection( sections[3])
+                quotes = self.getAcordaosQuotes( obs)
             if 4 in keys:
                 doutrines = self.parseItem(sections[4].extract())
-            print '-------------------------------------------------------------'
-            print 'relator: '+relator
-            print '\nId: '+acordaoId
-            print '\nuf: '+uf
-            print '\ndataJulg: '+dataJulg
-            print '\norgaoJulg: '+orgaoJulg
-            print '\npublic: '+publicacao
-            print '\npartes: '+partes
-            print '\nementa: '+ementa
-            print '\ndecisao: '+decision
-            print '\nindexacao: '+tags
-            print '\nleis: '+laws
-            print '\ndoutrinas: '+doutrines
-            print '\nobs: '+obs
-            print '\n'
-            print '-------------------------------------------------------------'
-#            yield StfItem(
-#                acordaoId   = acordaoId,
-#                uf          = uf,
+            i = i + 1
+            item =  StfItem(
+                acordaoId   = acordaoId,
+                uf          = uf,
 #                publicacao  = publicacao,
-#                dataJulg    = dataJulg,
-#                relator     = relator,
-#                ementa      = ementa,
-#                decisao     = decisao,
-#              #  citacoes    = citacoes,
-#                filename    = 'stf'+str(self.fIndex).zfill(6)
-# 
+                dataJulg    = dataJulg,
+                partes      = partes,
+                relator     = relator,
+                ementa      = ementa,
+                decisao     = decision,
+                citacoes    = quotes,
+                legislacao  = laws,
+                doutrinas   = doutrines,
+                observacao  = obs, 
+                tags        = tags, 
+                filename    = 'stf'+str(self.fIndex).zfill(6)+'.xml'
+            ) 
+#            self.printItem(item)
+            self.testItem(item)
+        #    self.printItem(item)
+            self.fIndex += 1
            # f = open( '../files/stf'+str(self.index).zfill(6)+'.xml', 'w' )
            # f.write(html2text.html2text( div ).encode('utf-8'))
            # self.index = self.index + 1
+        self.writeTestLog( self.relators, 'tests/relatorsList')
+        self.writeTestLog( self.ids, 'tests/idsList')
+        self.writeTestLog( self.ufs, 'tests/ufsList')
+   
+    def addToDict( self, dic, item):
+        keys = dic.keys()
+        if item in keys:
+            dic[item] += 1
+        else:
+            dic[item] = 1
+        return dic
 
-#    def parseDoc( self, response ):
+    def testItem( self, item):
+        self.relators = self.addToDict( self.relators, item['relator'])
+        self.ids = self.addToDict( self.ids, item['acordaoId'])
+        self.ufs = self.addToDict( self.ufs, item['uf'])
+    
+    def writeTestLog(self, dataDict, outputFile):
+        with open( outputFile, 'a') as f:
+            for v in dataDict.keys():
+                data = v.rstrip()+' :'+ '{:^30}'.format(str( dataDict[v]))
+                f.write( data) 
+                f.write('\n-------------------------------------------------------------\n')
+     
+    def printItem( self, item):
+        print '-------------------------------------------------------------'
+        print 'relator:\n'+item['relator']
+        print '\nId:\n'+item['acordaoId']
+        print '\nuf:\n'+item['uf']
+        print '\ndataJulg:\n'+item['dataJulg']
+#        print '\norgaoJulg:\n'+item['orgaoJulg']
+#        print '\npublic:\n'+item.publicacao
+        print '\npartes:\n'+item['partes']
+        print '\nementa:\n'+item['ementa']
+        print '\ndecisao:\n'+item['decisao']
+        print '\nindexacao:\n'+item['tags']
+        print '\nleis:\n'+item['legislacao']
+        print '\ndoutrinas:\n'+item['doutrinas']
+        print '\nobs:\n'+item['observacao']
+#        print '\nresult:\n'+result
+        print '\n\nquotes:\n'
+        print item['citacoes']
+        print '-------------------------------------------------------------'
+ 
         
+         
