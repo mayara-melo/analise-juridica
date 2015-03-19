@@ -36,7 +36,11 @@ class STFSpider(BaseSpider):
     
     def parseItem( self, item ):
         text = item.replace("&nbsp", '')
-        return html2text.html2text( text)
+        text = html2text.html2text( text)
+        text = text.encode('utf-8')
+        text = text.replace('\n\n', '')
+        text = text.replace('\r\n', '')
+        return text
 
     def orderSections( self, sectHeaders, sectBody, possHeaders):
         sections = {}
@@ -108,7 +112,7 @@ class STFSpider(BaseSpider):
             titleLine = re.match('\s*([\w -]+)\/\s([A-Za-z]{2}).*', title[0])
             acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
             uf = self.parseItem( titleLine.group(2))
-            relator = self.parseItem( re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*([a-zA-Z ]+)', title[7] ).group(1))
+            relator = self.parseItem(re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1))
             for dataElem in title:
                 if dataElem.startswith('Julgamento'):
                     titleLine = re.match('\s*Julgamento:\s*([\d\/]+)\s*.*Julgador:\s*([\w ]+).*', self.parseItem(dataElem ))
@@ -130,6 +134,7 @@ class STFSpider(BaseSpider):
                 '**Observa',  # p/strong/text() sec next pre
                 '**Doutrina'    # p/strong/text() sec next pre
             ]
+            self.fIndex += 1
             sections = self.orderSections(  sectHeaders, sectBody, possHeaders)
             decision = tags = laws = obs = doutrines = quotes = result =''
             keys = sections.keys()
@@ -145,7 +150,7 @@ class STFSpider(BaseSpider):
             if 4 in keys:
                 doutrines = self.parseItem(sections[4].extract())
             i = i + 1
-            item =  StfItem(
+            yield StfItem(
                 acordaoId   = acordaoId,
                 uf          = uf,
 #                publicacao  = publicacao,
@@ -162,15 +167,14 @@ class STFSpider(BaseSpider):
                 filename    = 'stf'+str(self.fIndex).zfill(6)+'.xml'
             ) 
 #            self.printItem(item)
-            self.testItem(item)
+   #         self.testItem(item)
         #    self.printItem(item)
-            self.fIndex += 1
            # f = open( '../files/stf'+str(self.index).zfill(6)+'.xml', 'w' )
            # f.write(html2text.html2text( div ).encode('utf-8'))
            # self.index = self.index + 1
-        self.writeTestLog( self.relators, 'tests/relatorsList')
-        self.writeTestLog( self.ids, 'tests/idsList')
-        self.writeTestLog( self.ufs, 'tests/ufsList')
+#        self.writeTestLog( self.relators, 'tests/relatorsList')
+ #       self.writeTestLog( self.ids, 'tests/idsList')
+  #      self.writeTestLog( self.ufs, 'tests/ufsList')
    
     def addToDict( self, dic, item):
         keys = dic.keys()
@@ -188,7 +192,7 @@ class STFSpider(BaseSpider):
     def writeTestLog(self, dataDict, outputFile):
         with open( outputFile, 'a') as f:
             for v in dataDict.keys():
-                data = v.rstrip()+' :'+ '{:^30}'.format(str( dataDict[v]))
+                data = v.encode('utf-8').strip()+' :'+ '{:<30}'.format(str( dataDict[v]))
                 f.write( data) 
                 f.write('\n-------------------------------------------------------------\n')
      

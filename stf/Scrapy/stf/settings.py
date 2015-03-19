@@ -8,8 +8,16 @@
 
 BOT_NAME = 'stf'
 
-SPIDER_MODULES = ['stf.spiders']
-NEWSPIDER_MODULE = 'stf.spiders'
+ITEM_PIPELINES = {
+    'stf.pipelines.MongoDBPipeline':1,
+}
 
+SPIDER_MODULES = ['stf.spiders']
+NEWSPIDER_MODULE = 'stf.spiders_dev'
+
+MONGODB_SERVER = "localhost"
+MONGODB_PORT = 27017
+MONGODB_DB = "test"
+MONGODB_COLLECTION = "stf"
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'stf (+http://www.yourdomain.com)'
