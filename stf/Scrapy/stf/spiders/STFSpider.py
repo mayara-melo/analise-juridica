@@ -29,44 +29,41 @@ class STFSpider(BaseSpider):
              iDate +                 # data inicial
             '%29%28%40JULG+%3C%3D+'+
              fDate +                 # data final
-            '%29'
+            '%29'+
             '&pagina='+page+
             '&base=baseAcordaos'
         ]
     
     def parseItem( self, item ):
-        text = item.replace("&nbsp", '')
-        text = html2text.html2text( text)
-        text = text.encode('utf-8')
-        text = text.replace('\n\n', '')
-        text = text.replace('\r\n', '')
+       # text = item.replace("&nbsp", '')
+       # text = html2text.html2text( text)
+        text = item.encode('utf-8')
+       # text = text.replace('\n\n', '')
+       # text = text.replace('\r\n', '')
         return text
 
     def orderSections( self, sectHeaders, sectBody, possHeaders):
         sections = {}
         for i,ph in enumerate(possHeaders):
             for j, sh in enumerate(sectHeaders):
-                sh = self.parseItem( sh)
                 if (sh.startswith( ph)):
-                    sections[i] = sectBody[j]
+                    sections[i] = sectBody[j].encode('utf-8')
                     break
         return sections
 
     def getAcordaosQuotes( self, txt):
         quotes = []
-        data = re.search("Ac.rd.o[s]? citado[s]?\s*:\s*([^\.]*)", txt)
+        data = re.search(r"Acórdão(?:\(?s\)?)? citado(?:\(?s\)?)?\s*:\s*([^:]*)(?=\.[^:])", txt)
         if data:
-            data = (data.group(1)).replace(',',' ')
-            data = data.split(' ')
+            data = (data.group(1))
+            data = re.split('[;,.()]', data)
             for q in data:
-                q = q.replace('(', '')
-                q = q.replace(')', '')
-                q = q.replace('\r','')
-                q = q.replace('\n','')
-                q = q.replace(' ', '')
-                q = q.replace('-', ' ')
-                if q: 
+                if re.search(r'\d+', q):
+                    q = q.replace('-', ' ')
+                    q = q.strip()
                     quotes.append( q) 
+ #           print 'depois: '+ data
+  #          print quotes
         return quotes
 
 #    def getResult( self, txt):
@@ -109,46 +106,52 @@ class STFSpider(BaseSpider):
         for doc in body:
             print 'index: '+str( i)
             title = doc.xpath('p[1]/strong/text()').extract()
-            titleLine = re.match('\s*([\w -]+)\/\s([A-Za-z]{2}).*', title[0])
-            acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
-            uf = self.parseItem( titleLine.group(2))
-            relator = self.parseItem(re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1))
-            for dataElem in title:
-                if dataElem.startswith('Julgamento'):
-                    titleLine = re.match('\s*Julgamento:\s*([\d\/]+)\s*.*Julgador:\s*([\w ]+).*', self.parseItem(dataElem ))
-                    dataJulg = titleLine.group(1)
-                    orgaoJulg = titleLine.group(2)
+            titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0].encode('utf-8'))
+            #acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
+            acordaoId = titleLine.group(1).replace('-',' ')
+#            uf = self.parseItem( titleLine.group(2))
+            ufShort = titleLine.group(2)
+            uf = titleLine.group(3)
+            relator = re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1)
+            dataJulg = orgaoJulg =''
+            for line in title[1:]:
+                line = line.encode('utf-8')
+                line = line.replace('&nbsp', '')
+                if line.startswith('Julgamento'):
+                    julgLine = re.match('Julgamento:\s*([\d\/]+)\s*.* Julgador:\s*(.*)', line)
+                    dataJulg = julgLine.group(1)
+                    orgaoJulg = julgLine.group(2)
                     break
-            publicacao = self.parseItem( doc.xpath('pre[1]/text()').extract()[0])            
-            partes = self.parseItem( doc.xpath('pre[2]/text()').extract()[0])            
-            ementa = self.parseItem( doc.xpath('strong[1]/p/text()').extract()[1])
-
-            sectHeaders = doc.xpath('p/strong').extract()[3:]
-#            map(self.parseItem, docHeaders)
-            sectBody = doc.xpath('pre')[2:]
-#            map( self.parseItem, sectBody)
+            publicacao = doc.xpath('pre[1]/text()').extract()[0]            
+            partes = doc.xpath('pre[2]/text()').extract()[0]
+            ementa = doc.xpath('strong[1]/p/text()').extract()[1]
+            sectHeaders = doc.xpath('p/strong/text()').extract()[12:-1]
+            sectBody = doc.xpath('pre/text()').extract()[2:]
             possHeaders = [
-                '**Decis',     # strong/p/strong/text() sec strong/p
-                '**Indexa',   # p/strong/text() sec next pre
-                '**Legisla',  # p/strong/text() sec next pre
-                '**Observa',  # p/strong/text() sec next pre
-                '**Doutrina'    # p/strong/text() sec next pre
+                'Decis',     # strong/p/strong/text() sec strong/p
+                'Indexa',   # p/strong/text() sec next pre
+                'Legisla',  # p/strong/text() sec next pre
+                'Observa',  # p/strong/text() sec next pre
+                'Doutrina'    # p/strong/text() sec next pre
             ]
-            self.fIndex += 1
+#            self.fIndex += 1
             sections = self.orderSections(  sectHeaders, sectBody, possHeaders)
             decision = tags = laws = obs = doutrines = quotes = result =''
             keys = sections.keys()
             if 0 in keys:
-                decision = self.parseItem(sections[0].extract())
+                decision = sections[0]
             if 1 in keys:
-                tags = self.parseItem(sections[1].extract())
+                tags = re.split(r'[\n,\-.]+', sections[1])
+                for j in range( len(tags)):
+                    tags[j] = tags[j].strip()
+                tags = filter(None, tags)
             if 2 in keys:
-                laws = self.parseItem(sections[2].extract())
+                laws = sections[2]
             if 3 in keys:
-                obs = self.parseItem(sections[3].extract())
+                obs = sections[3]
                 quotes = self.getAcordaosQuotes( obs)
             if 4 in keys:
-                doutrines = self.parseItem(sections[4].extract())
+                doutrines = sections[4]
             i = i + 1
             yield StfItem(
                 acordaoId   = acordaoId,
@@ -164,7 +167,6 @@ class STFSpider(BaseSpider):
                 doutrinas   = doutrines,
                 observacao  = obs, 
                 tags        = tags, 
-                filename    = 'stf'+str(self.fIndex).zfill(6)+'.xml'
             ) 
 #            self.printItem(item)
    #         self.testItem(item)
@@ -207,7 +209,8 @@ class STFSpider(BaseSpider):
         print '\npartes:\n'+item['partes']
         print '\nementa:\n'+item['ementa']
         print '\ndecisao:\n'+item['decisao']
-        print '\nindexacao:\n'+item['tags']
+        print '\nindexacao:\n'
+        print item['tags']
         print '\nleis:\n'+item['legislacao']
         print '\ndoutrinas:\n'+item['doutrinas']
         print '\nobs:\n'+item['observacao']
