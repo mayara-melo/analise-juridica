@@ -66,7 +66,8 @@ class STJSpider(BaseSpider):
         )
 
     def parseItem( self, item ):
-        return html2text.html2text( item)
+        text = item.encode('utf-8')
+        return text
 
     def orderSections( self, selectors, possHeader):
         sections = {}
@@ -85,29 +86,31 @@ class STJSpider(BaseSpider):
         relator = dataJulg = dataPublic = ementa = decisao = notas = leis =''
         citacoes = []
         possSection = [
-            'Data do Julg',    #0
-            'Data da Publ', #1
-            'Ementa',       #2
-            'Ac',            #3
-            'Veja'          #4
+            'Data do Julg',           #0
+            'Data da Publ',           #1
+            'Ementa',                 #2
+            'Ac',                     #3
+            'Refer',                  #4
+            'Veja'                    #5
         ]
 
         sectionsSel =  doc.xpath('.//div[@class="paragrafoBRS"]')
-
+        # Permanent order sections
         processoSection = sectionsSel[0].xpath('./div[@class="docTexto docRepetitivo"]/text()').extract()[0]
-        processoSection = re.match( r"([a-zA-Z0-9 ]+)/ (..).*", self.parseItem(processoSection))
+        processoSection = re.match( r"(\s*[a-zA-Z0-9 ]+)\s*/\s*(..).*", self.parseItem( processoSection))
         acordaoId = self.getId( processoSection.group(1))
         uf        = processoSection.group(2).strip()
-        relator   = self.parseSection( sectionsSel[1], './pre/text()', r"Ministr.\W*([^\(]*).*")
+        relator   = re.match( r"Ministr.\W*([^\(]*).*", sectionsSel[1].xpath('./pre/text()').extract()[0]).group(1).encode('utf-8')
+        # Facultative/unordered sections
         sections = self.orderSections( sectionsSel, possSection)
         dataJulg = self.parseSection( sections[0], './pre/span/text()', r"([\d\/]+)").strip()
         if 1 in sections:
             dataPublic = sections[1].xpath( './pre/text()').extract()
             dataPublic = re.search(r"(\d{2}\/\d{2}\/\d{4})" ,self.parseItem((''.join(dataPublic)))).group(1).strip()
-        ementa = self.parseItem( sections[2].xpath('./pre/text()').extract()[0]).strip()
-        decisao= self.parseItem( sections[3].xpath( './pre/text()').extract()[0]).strip()
-        if 4 in sections:
-            citacoes = sections[4].xpath('./pre/a/text()').extract()
+        ementa = self.parseItem( sections[2].xpath('./pre/text()').extract()[0].strip())
+        decisao= self.parseItem( sections[3].xpath( './pre/text()').extract()[0].strip())
+        if 5 in sections:
+            citacoes = sections[5].xpath('./pre/a/text()').extract()
             citacoes = map(self.getId, citacoes)
 #    print "--------------------------------------------------------------------------"
 #    print 	acordaoId
@@ -129,7 +132,7 @@ class STJSpider(BaseSpider):
                 ementa      = ementa,
                 decisao     = decisao,
                 citacoes    = citacoes,
-                filename    = 'stj'+str(self.fIndex).zfill(6)
+                tribunal    = 'stj'
            #  indexacao   = indexacao,
            # legislacao  = legislacao,
           #  observacao  = observacao
