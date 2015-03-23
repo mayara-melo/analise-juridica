@@ -2,7 +2,7 @@ from scrapy.item import Item, Field
 
 class StjItem(Item):
     acordaoId   = Field()
-    uf          = Field()
+    localSigla  = Field()
  #   tipo        = Field()
     relator     = Field()
  #   orgaoJulg   = Field()

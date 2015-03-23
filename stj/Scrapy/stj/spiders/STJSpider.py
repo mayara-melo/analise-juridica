@@ -99,7 +99,7 @@ class STJSpider(BaseSpider):
         processoSection = sectionsSel[0].xpath('./div[@class="docTexto docRepetitivo"]/text()').extract()[0]
         processoSection = re.match( r"(\s*[a-zA-Z0-9 ]+)\s*/\s*(..).*", self.parseItem( processoSection))
         acordaoId = self.getId( processoSection.group(1))
-        uf        = processoSection.group(2).strip()
+        localSigla= processoSection.group(2).strip()
         relator   = re.match( r"Ministr.\W*([^\(]*).*", sectionsSel[1].xpath('./pre/text()').extract()[0]).group(1).encode('utf-8')
         # Facultative/unordered sections
         sections = self.orderSections( sectionsSel, possSection)
@@ -125,7 +125,7 @@ class STJSpider(BaseSpider):
 #    print "--------------------------------------------------------------------------"
         return StjItem(
                 acordaoId   = acordaoId,
-                uf          = uf,
+                localSigla  = localSigla,
                 dataPublic  = dataPublic,
                 dataJulg    = dataJulg,
                 relator     = relator,
