@@ -62,8 +62,6 @@ class STFSpider(BaseSpider):
                     q = q.replace('-', ' ')
                     q = q.strip()
                     quotes.append( q) 
- #           print 'depois: '+ data
-  #          print quotes
         return quotes
 
 #    def getResult( self, txt):
@@ -88,7 +86,12 @@ class STFSpider(BaseSpider):
  #       if temp:
   #          temp
    #         print result
-        
+    def getFoundSection( self, n, sections):
+        if n in sections.keys():
+            return sections[n]
+        else:
+            return ''
+
     def parse( self, response ):
         print "\n\n\n\n"
         print 'parse method\n\n'
@@ -104,7 +107,6 @@ class STFSpider(BaseSpider):
         )
         i=0
         for doc in body:
-            print 'index: '+str( i)
             title = doc.xpath('p[1]/strong/text()').extract()
             titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0].encode('utf-8'))
             #acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
@@ -123,39 +125,38 @@ class STFSpider(BaseSpider):
                     orgaoJulg = julgLine.group(2)
                     break
             publicacao = doc.xpath('pre[1]/text()').extract()[0]            
-            partes = doc.xpath('pre[2]/text()').extract()[0]
             ementa = doc.xpath('strong[1]/p/text()').extract()[1]
-            sectHeaders = doc.xpath('p/strong/text()').extract()[12:-1]
-            sectBody = doc.xpath('pre/text()').extract()[2:]
+            sectHeaders = doc.xpath('p/strong/text()').extract()[len(title)+1:-1]
+            sectBody = doc.xpath('pre/text()').extract()[1:]
             possHeaders = [
+                'Parte',   
                 'Decis',     # strong/p/strong/text() sec strong/p
                 'Indexa',   # p/strong/text() sec next pre
                 'Legisla',  # p/strong/text() sec next pre
                 'Observa',  # p/strong/text() sec next pre
                 'Doutrina'    # p/strong/text() sec next pre
             ]
-#            self.fIndex += 1
+            self.fIndex += 1
             sections = self.orderSections(  sectHeaders, sectBody, possHeaders)
             decision = tags = laws = obs = doutrines = quotes = result =''
-            keys = sections.keys()
-            if 0 in keys:
-                decision = sections[0]
-            if 1 in keys:
-                tags = re.split(r'[\n,\-.]+', sections[1])
+            
+            partes = self.getFoundSection( 0, sections)
+            decision = self.getFoundSection( 1, sections)
+            tags = self.getFoundSection( 2, sections)
+            laws = self.getFoundSection( 3, sections)
+            obs = self.getFoundSection( 4, sections)
+            doutrines = self.getFoundSection( 5, sections)
+            if tags:
+                tags = re.split(r'[\n,\-.]+', tags)
                 for j in range( len(tags)):
                     tags[j] = tags[j].strip()
                 tags = filter(None, tags)
-            if 2 in keys:
-                laws = sections[2]
-            if 3 in keys:
-                obs = sections[3]
+            if obs:
                 quotes = self.getAcordaosQuotes( obs)
-            if 4 in keys:
-                doutrines = sections[4]
-            i = i + 1
             yield StfItem(
                 acordaoId   = acordaoId,
-                uf          = uf,
+                localSigla  = ufShort,
+                local       = uf,
 #                publicacao  = publicacao,
                 dataJulg    = dataJulg,
                 partes      = partes,

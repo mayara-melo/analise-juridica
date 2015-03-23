@@ -2,7 +2,8 @@ from scrapy.item import Item, Field
 
 class StfItem(Item):
     acordaoId   = Field()
-    uf          = Field()
+    localSigla  = Field()
+    local       = Field()
  #   tipo        = Field()
     relator     = Field()
  #   orgaoJulg   = Field()
@@ -11,7 +12,6 @@ class StfItem(Item):
     ementa      = Field()
     decisao     = Field()
     citacoes    = Field()
-    filename    = Field()
 #    sucessivos  = Field()
     legislacao  = Field()
     observacao  = Field()
