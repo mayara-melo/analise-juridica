@@ -18,5 +18,6 @@ class StfItem(Item):
     doutrinas   = Field()
     tags        = Field()
     partes      = Field()
+    tribunal    = Field()
 #    acordaos    = Field()
 #    tudo        = Field()
