@@ -14,15 +14,12 @@ class STJSpider(BaseSpider):
 
     name = 'stj'
     
-    def nextDay( self, cur_date):
-        y = int(cur_date[0:4])
-        m = int(cur_date[4:6])
-        d = int(cur_date[6:8])
-        date = datetime( y,m,d)
-        date = date + timedelta( days=1)
-        d = str(date.day).zfill(2)
-        m = str(date.month).zfill(2)
-        y = str(date.year)
+    def nextDay( self, date):
+        nextDay = datetime( int(date[0:4]), int(date[4:6]), int(date[6:8]))
+        nextDay += timedelta( days=1)
+        d = str(nextDay.day).zfill(2)
+        m = str(nextDay.month).zfill(2)
+        y = str(nextDay.year)
         return y+m+d
     
     def getParametersFromFile( self):
@@ -66,7 +63,8 @@ class STJSpider(BaseSpider):
         )
 
     def parseItem( self, item ):
-        text = item.encode('utf-8')
+        text = html2text.html2text( item)
+        text = text.encode('utf-8')
         return text
 
     def orderSections( self, selectors, possHeader):
@@ -79,8 +77,17 @@ class STJSpider(BaseSpider):
                     break
         return sections
 
-    def parseSection( self, secSel, secTxtXpath, secRegex):     
-        return re.match( secRegex, self.parseItem( secSel.xpath( secTxtXpath).extract()[0])).group(1)
+    def parseSection( self, selector, xpath, regex):     
+        text = self.parseItem( selector.xpath( xpath).extract()[0])
+        return re.match( regex, text)
+
+    def getRegexMatch( self, matchObj, groupNumber, sectionName):
+        if matchObj == None:
+            print 'err getting '+ errMessage
+            print 'match group number: '+ int( groupNumber)
+            print 'index: '+ int( self.fIndex) 
+        else:
+            return matchObj.group( groupNumber)
 
     def parseDoc( self, doc):
         relator = dataJulg = dataPublic = ementa = decisao = notas = leis =''
@@ -93,20 +100,34 @@ class STJSpider(BaseSpider):
             'Refer',                  #4
             'Veja'                    #5
         ]
-
         sectionsSel =  doc.xpath('.//div[@class="paragrafoBRS"]')
         # Permanent order sections
-        processoSection = sectionsSel[0].xpath('./div[@class="docTexto docRepetitivo"]/text()').extract()[0]
-        processoSection = re.match( r"(\s*[a-zA-Z0-9 ]+)\s*/\s*(..).*", self.parseItem( processoSection))
-        acordaoId = self.getId( processoSection.group(1))
-        localSigla= processoSection.group(2).strip()
-        relator   = re.match( r"Ministr.\W*([^\(]*).*", sectionsSel[1].xpath('./pre/text()').extract()[0]).group(1).encode('utf-8')
+        processo = self.parseSection( sectionsSel[0], './div[@class="docTexto docRepetitivo"]/text()',
+                                                       r"\s*([a-zA-Z0-9 ]*).*\s*\/\s*(..).*")
+      #  processoSection = sectionsSel[0].xpath('./div[@class="docTexto docRepetitivo"]/text()').extract()[0]
+      #  processoSection = re.match( r"\s*([a-zA-Z0-9 ]*).*\s*\/\s*(..).*", self.parseItem( processoSection))
+        acordaoId = self.getRegexMatch( processo, 1, "id")
+        localSigla = self.getRegexMatch( processo, 2, "local (sigla)")
+#        if (processo == None):
+ #           print "error getting id, index: "+ str(self.fIndex)
+#            print sectionsSel[0].xpath('./div[@class="docTexto docRepetitivo"]/text()').extract()[0]
+ #       acordaoId = self.getId( processoSection.group(1))
+  #      localSigla= processoSection.group(2).strip()
+#        relator   = self.parseItem((re.match( r"Ministr.\W*([^\(]*).*", sectionsSel[1].xpath('./pre/text()').extract()[0]).group(1)))
+        relator = self.parseSection( sectionsSel[1], './pre/text()', r"Ministr.\W*([^\(]*).*")
+        relator = self.getRegexMatch( relator, 1, "relator")
+ 
         # Facultative/unordered sections
         sections = self.orderSections( sectionsSel, possSection)
-        dataJulg = self.parseSection( sections[0], './pre/span/text()', r"([\d\/]+)").strip()
+        dataJulg = self.parseSection( sections[0], './pre/span/text()', r"(\d\d)\/(\d\d)\/(\d\d\d\d)")
+        dataJulg = datetime( int(self.getRegexMatch( dataJulg, 3, "dataJulg dia")),
+                             int(self.getRegexMatch( dataJulg, 2, "dataJulg mes")),
+                             int(self.getRegexMatch( dataJulg, 1, "dataJulg ano"))
+                            )
         if 1 in sections:
             dataPublic = sections[1].xpath( './pre/text()').extract()
-            dataPublic = re.search(r"(\d{2}\/\d{2}\/\d{4})" ,self.parseItem((''.join(dataPublic)))).group(1).strip()
+            dataPublic = re.search(r"(\d{2})\/(\d{2})\/(\d{4})" ,self.parseItem((''.join(dataPublic))))
+            dataPublic = datetime( int(dataPublic.group(3)), int(dataPublic.group(2)), int(dataPublic.group(1)))
         ementa = self.parseItem( sections[2].xpath('./pre/text()').extract()[0].strip())
         decisao= self.parseItem( sections[3].xpath( './pre/text()').extract()[0].strip())
         if 5 in sections:
@@ -125,12 +146,12 @@ class STJSpider(BaseSpider):
 #    print "--------------------------------------------------------------------------"
         return StjItem(
                 acordaoId   = acordaoId,
-                localSigla  = localSigla,
+                localSigla  = localSigla.strip(),
                 dataPublic  = dataPublic,
                 dataJulg    = dataJulg,
-                relator     = relator,
-                ementa      = ementa,
-                decisao     = decisao,
+                relator     = relator.strip(),
+                ementa      = ementa.strip(),
+                decisao     = decisao.strip(),
                 citacoes    = citacoes,
                 tribunal    = 'stj'
            #  indexacao   = indexacao,
@@ -143,14 +164,17 @@ class STJSpider(BaseSpider):
         a = ''
         for i in reversed(acId):
             a = a + i +' '
-        return a
+        return a.strip()
     
     def parsePage( self, response):
         sel = Selector(response)
 #    open_in_browser(response);
 #        inspect_response(response)
         doclist = sel.xpath(
-            '/html/body/div[@id="divprincipal"]/div[@class="minwidth"]/div[@id="idInternetBlocoEmpacotador"]/div[@class="incenter_interno"]'+
+            '/html/body/div[@id="divprincipal"]'+
+            '/div[@class="minwidth"]'+
+            '/div[@id="idInternetBlocoEmpacotador"]'+
+            '/div[@class="incenter_interno"]'+
             '/div[@id="idDivContainer"]'+
             '/div[@id="idAreaBlocoExterno"]'+
             '/div[@id="idArea"]'+
@@ -162,6 +186,8 @@ class STJSpider(BaseSpider):
             self.fIndex = self.fIndex + 1
         nextPage = sel.xpath('//*[@id="navegacao"]/a/img[@src="/recursos/imagens/tocn.gif"]')
         if nextPage:
-            yield Request( urlparse.urljoin('http://www.stj.jus.br/', nextPage.xpath('../@href').extract()[0]), callback=self.parsePage)
+            yield Request( urlparse.urljoin('http://www.stj.jus.br/',
+                           nextPage.xpath('../@href').extract()[0]),
+                           callback=self.parsePage )
         else:
             self.saveSearchInfo()
