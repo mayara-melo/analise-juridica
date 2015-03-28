@@ -124,10 +124,10 @@ class STFSpider(BaseSpider):
                     dataJulg = julgLine.group(1)
                     orgaoJulg = julgLine.group(2)
                     break
-            publicacao = doc.xpath('pre[1]/text()').extract()[0]            
-            ementa = doc.xpath('strong[1]/p/text()').extract()[1]
+            publicacao  = doc.xpath('pre[1]/text()').extract()[0]            
+            ementa      = doc.xpath('strong[1]/p/text()').extract()[1]
             sectHeaders = doc.xpath('p/strong/text()').extract()[len(title)+1:-1]
-            sectBody = doc.xpath('pre/text()').extract()[1:]
+            sectBody    = doc.xpath('pre/text()').extract()[1:]
             possHeaders = [
                 'Parte',   
                 'Decis',     # strong/p/strong/text() sec strong/p
@@ -137,15 +137,16 @@ class STFSpider(BaseSpider):
                 'Doutrina'    # p/strong/text() sec next pre
             ]
             self.fIndex += 1
-            sections = self.orderSections(  sectHeaders, sectBody, possHeaders)
-            decision = tags = laws = obs = doutrines = quotes = result =''
+            sections  = self.orderSections(  sectHeaders, sectBody, possHeaders)
+            decision  = tags = laws = obs = doutrines = quotes = result =''
             
-            partes = self.getFoundSection( 0, sections)
-            decision = self.getFoundSection( 1, sections)
-            tags = self.getFoundSection( 2, sections)
-            laws = self.getFoundSection( 3, sections)
-            obs = self.getFoundSection( 4, sections)
+            partes    = self.getFoundSection( 0, sections)
+            decision  = self.getFoundSection( 1, sections)
+            tags      = self.getFoundSection( 2, sections)
+            laws      = self.getFoundSection( 3, sections)
+            obs       = self.getFoundSection( 4, sections)
             doutrines = self.getFoundSection( 5, sections)
+
             if tags:
                 tags = re.split(r'[\n,\-.]+', tags)
                 for j in range( len(tags)):
@@ -153,6 +154,7 @@ class STFSpider(BaseSpider):
                 tags = filter(None, tags)
             if obs:
                 quotes = self.getAcordaosQuotes( obs)
+
             yield StfItem(
                 acordaoId   = acordaoId,
                 localSigla  = ufShort,
@@ -168,6 +170,7 @@ class STFSpider(BaseSpider):
                 doutrinas   = doutrines,
                 observacao  = obs, 
                 tags        = tags, 
+                tribunal    = "stf" 
             ) 
 #            self.printItem(item)
    #         self.testItem(item)
