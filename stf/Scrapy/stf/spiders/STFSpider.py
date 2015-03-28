@@ -36,8 +36,8 @@ class STFSpider(BaseSpider):
     
     def parseItem( self, item ):
        # text = item.replace("&nbsp", '')
-       # text = html2text.html2text( text)
-        text = item.encode('utf-8')
+        text = html2text.html2text( item)
+        text = text.encode('utf-8')
        # text = text.replace('\n\n', '')
        # text = text.replace('\r\n', '')
         return text
