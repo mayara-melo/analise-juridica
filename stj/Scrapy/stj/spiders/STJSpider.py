@@ -78,17 +78,25 @@ class STJSpider(BaseSpider):
                     break
         return sections
 
-    def parseSection( self, selector, xpath, regex):     
-        text = self.parseItem( selector.xpath( xpath).extract()[0])
-        return re.match( regex, text)
-
-    def getRegexMatch( self, matchObj, groupNumber, sectionName):
-        if matchObj == None:
-            print 'err getting '+ sectionName
-            print 'match group number: '+ str(groupNumber)
+    def getSectionText( self, selector, xpath):     
+        text = selector.xpath( xpath).extract()[0]
+        if text == None:
+            print 'err getting xpath: ' +xpath+'from selector '
+            print selector
             print 'index: '+ str( self.fIndex) 
+            return ''
         else:
-            return matchObj.group( groupNumber)
+            return self.parseItem( text)
+
+    def getRegexMatch( self, text, regexExp):
+        match = re.match( regexExp, text)
+        if  match == None:
+            print 'err getting '+ regexExp
+            print 'from: '+ text
+            print 'index: '+ str( self.fIndex) 
+            return ''
+        else:
+            return match.group(1)
 
     def parseDoc( self, doc):
         relator = dataJulg = dataPublic = ementa = decisao = notas = leis =''
@@ -103,19 +111,19 @@ class STJSpider(BaseSpider):
         ]
         sectionsSel =  doc.xpath('.//div[@class="paragrafoBRS"]')
         # Permanent order sections
-        processo   = self.parseSection( sectionsSel[0], './div[@class="docTexto docRepetitivo"]/text()',
-                                                         r"\s*([a-zA-Z0-9 ]*).*\s*\/\s*(..).*")
-        acordaoId  = self.getRegexMatch( processo, 1, "id")
-        localSigla = self.getRegexMatch( processo, 2, "local (sigla)")
-        relator    = self.parseSection( sectionsSel[1], './pre/text()', r"M[A-Za-z\)\(:.]*\W*([^\(]*).*")
-        relator    = self.getRegexMatch( relator, 1, "relator")
+        processo   = self.getSectionText( sectionsSel[0], './div[@class="docTexto docRepetitivo"]/text()',
+                                                         )
+        acordaoId  = self.getRegexMatch( processo, r"\s*([^\/]*).*").strip()
+        localSigla = self.getRegexMatch( processo, r"[^\/]*\/\s*(..).*")
+        relator    = self.getSectionText( sectionsSel[1], './pre/text()')
+        relator    = self.getRegexMatch( relator, r"M[A-Za-z\)\(:.]*\W*([^\(]*).*")
  
         # Facultative/unordered sections
         sections = self.orderSections( sectionsSel, possSection)
-        dataJulg = self.parseSection( sections[0], './pre/span/text()', r"(\d\d)\/(\d\d)\/(\d\d\d\d)")
-        dataJulg = datetime( int(self.getRegexMatch( dataJulg, 3, "dataJulg dia")),
-                             int(self.getRegexMatch( dataJulg, 2, "dataJulg mes")),
-                             int(self.getRegexMatch( dataJulg, 1, "dataJulg ano"))
+        dataJulg = self.getSectionText( sections[0], './pre/span/text()' )
+        dataJulg = datetime( int(self.getRegexMatch( dataJulg, r"\d\d\/\d\d\/(\d{4})")),
+                             int(self.getRegexMatch( dataJulg, r"\d\d\/(\d\d)\/\d{4}")),
+                             int(self.getRegexMatch( dataJulg, r"(\d\d)\/\d\d\/\d{4}"))
                             )
         if 1 in sections:
             dataPublic = sections[1].xpath( './pre/text()').extract()
@@ -129,7 +137,7 @@ class STJSpider(BaseSpider):
 
         return StjItem(
                 acordaoId   = acordaoId,
-                localSigla  = localSigla.strip(),
+                localSigla  = localSigla,
                 dataPublic  = dataPublic,
                 dataJulg    = dataJulg,
                 relator     = relator.strip(),
