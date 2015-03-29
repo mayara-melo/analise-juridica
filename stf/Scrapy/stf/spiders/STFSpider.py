@@ -4,6 +4,8 @@ from scrapy.spider import BaseSpider
 import html2text
 from stf.items import StfItem
 import re
+import time
+from datetime import datetime, timedelta
 
 def findId( text):
     return text
@@ -35,10 +37,10 @@ class STFSpider(BaseSpider):
         ]
     
     def parseItem( self, item ):
-       # text = item.replace("&nbsp", '')
+      #  text = item.replace("&nbsp", '')
         text = html2text.html2text( item)
         text = text.encode('utf-8')
-       # text = text.replace('\n\n', '')
+        text = text.replace('\\r', '')
        # text = text.replace('\r\n', '')
         return text
 
@@ -47,7 +49,7 @@ class STFSpider(BaseSpider):
         for i,ph in enumerate(possHeaders):
             for j, sh in enumerate(sectHeaders):
                 if (sh.startswith( ph)):
-                    sections[i] = sectBody[j].encode('utf-8')
+                    sections[i] = sectBody[j]
                     break
         return sections
 
@@ -105,27 +107,26 @@ class STFSpider(BaseSpider):
             '/div[@class="abasAcompanhamento"]'+
             '/div[@class="processosJurisprudenciaAcordaos"]'
         )
-        i=0
         for doc in body:
             title = doc.xpath('p[1]/strong/text()').extract()
-            titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0].encode('utf-8'))
+            titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
             #acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
-            acordaoId = titleLine.group(1).replace('-',' ')
+            acordaoId = (titleLine.group(1).replace('-',' ')).strip()
 #            uf = self.parseItem( titleLine.group(2))
             ufShort = titleLine.group(2)
             uf = titleLine.group(3)
             relator = re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1)
             dataJulg = orgaoJulg =''
             for line in title[1:]:
-                line = line.encode('utf-8')
                 line = line.replace('&nbsp', '')
+                line = self.parseItem( line)
                 if line.startswith('Julgamento'):
-                    julgLine = re.match('Julgamento:\s*([\d\/]+)\s*.* Julgador:\s*(.*)', line)
-                    dataJulg = julgLine.group(1)
-                    orgaoJulg = julgLine.group(2)
+                    julgLine = re.match('Julgamento:\s*(\d{2})\/(\d{2})\/(\d{4})\s*.* Julgador:\s*(.*)', line)
+                    dataJulg = datetime( int(julgLine.group(3)), int(julgLine.group(2)), int(julgLine.group(1)))
+                    orgaoJulg = julgLine.group(4)
                     break
-            publicacao  = doc.xpath('pre[1]/text()').extract()[0]            
-            ementa      = doc.xpath('strong[1]/p/text()').extract()[1]
+            publicacao  = self.parseItem( doc.xpath('pre[1]/text()').extract()[0]).strip()
+            ementa      = self.parseItem( doc.xpath('strong[1]/p/text()').extract()[1]).strip()
             sectHeaders = doc.xpath('p/strong/text()').extract()[len(title)+1:-1]
             sectBody    = doc.xpath('pre/text()').extract()[1:]
             possHeaders = [
@@ -140,12 +141,12 @@ class STFSpider(BaseSpider):
             sections  = self.orderSections(  sectHeaders, sectBody, possHeaders)
             decision  = tags = laws = obs = doutrines = quotes = result =''
             
-            partes    = self.getFoundSection( 0, sections)
-            decision  = self.getFoundSection( 1, sections)
-            tags      = self.getFoundSection( 2, sections)
-            laws      = self.getFoundSection( 3, sections)
-            obs       = self.getFoundSection( 4, sections)
-            doutrines = self.getFoundSection( 5, sections)
+            partes    = self.parseItem( self.getFoundSection( 0, sections)).strip()
+            decision  = self.parseItem( self.getFoundSection( 1, sections)).strip()
+            tags      = self.parseItem( self.getFoundSection( 2, sections)).strip()
+            laws      = self.parseItem( self.getFoundSection( 3, sections)).strip()
+            obs       = self.parseItem( self.getFoundSection( 4, sections)).strip()
+            doutrines = self.parseItem( self.getFoundSection( 5, sections)).strip()
 
             if tags:
                 tags = re.split(r'[\n,\-.]+', tags)
