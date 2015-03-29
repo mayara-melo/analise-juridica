@@ -9,6 +9,7 @@ import html2text
 import re
 from scrapy.shell import inspect_response
 from datetime import datetime, timedelta
+import time
 
 class STJSpider(BaseSpider):
 
@@ -83,9 +84,9 @@ class STJSpider(BaseSpider):
 
     def getRegexMatch( self, matchObj, groupNumber, sectionName):
         if matchObj == None:
-            print 'err getting '+ errMessage
-            print 'match group number: '+ int( groupNumber)
-            print 'index: '+ int( self.fIndex) 
+            print 'err getting '+ sectionName
+            print 'match group number: '+ str(groupNumber)
+            print 'index: '+ str( self.fIndex) 
         else:
             return matchObj.group( groupNumber)
 
@@ -102,20 +103,12 @@ class STJSpider(BaseSpider):
         ]
         sectionsSel =  doc.xpath('.//div[@class="paragrafoBRS"]')
         # Permanent order sections
-        processo = self.parseSection( sectionsSel[0], './div[@class="docTexto docRepetitivo"]/text()',
-                                                       r"\s*([a-zA-Z0-9 ]*).*\s*\/\s*(..).*")
-      #  processoSection = sectionsSel[0].xpath('./div[@class="docTexto docRepetitivo"]/text()').extract()[0]
-      #  processoSection = re.match( r"\s*([a-zA-Z0-9 ]*).*\s*\/\s*(..).*", self.parseItem( processoSection))
-        acordaoId = self.getRegexMatch( processo, 1, "id")
+        processo   = self.parseSection( sectionsSel[0], './div[@class="docTexto docRepetitivo"]/text()',
+                                                         r"\s*([a-zA-Z0-9 ]*).*\s*\/\s*(..).*")
+        acordaoId  = self.getRegexMatch( processo, 1, "id")
         localSigla = self.getRegexMatch( processo, 2, "local (sigla)")
-#        if (processo == None):
- #           print "error getting id, index: "+ str(self.fIndex)
-#            print sectionsSel[0].xpath('./div[@class="docTexto docRepetitivo"]/text()').extract()[0]
- #       acordaoId = self.getId( processoSection.group(1))
-  #      localSigla= processoSection.group(2).strip()
-#        relator   = self.parseItem((re.match( r"Ministr.\W*([^\(]*).*", sectionsSel[1].xpath('./pre/text()').extract()[0]).group(1)))
-        relator = self.parseSection( sectionsSel[1], './pre/text()', r"Ministr.\W*([^\(]*).*")
-        relator = self.getRegexMatch( relator, 1, "relator")
+        relator    = self.parseSection( sectionsSel[1], './pre/text()', r"M[A-Za-z\)\(:.]*\W*([^\(]*).*")
+        relator    = self.getRegexMatch( relator, 1, "relator")
  
         # Facultative/unordered sections
         sections = self.orderSections( sectionsSel, possSection)
@@ -128,22 +121,12 @@ class STJSpider(BaseSpider):
             dataPublic = sections[1].xpath( './pre/text()').extract()
             dataPublic = re.search(r"(\d{2})\/(\d{2})\/(\d{4})" ,self.parseItem((''.join(dataPublic))))
             dataPublic = datetime( int(dataPublic.group(3)), int(dataPublic.group(2)), int(dataPublic.group(1)))
-        ementa = self.parseItem( sections[2].xpath('./pre/text()').extract()[0].strip())
-        decisao= self.parseItem( sections[3].xpath( './pre/text()').extract()[0].strip())
+        ementa  = self.parseItem( sections[2].xpath('./pre/text()').extract()[0].strip())
+        decisao = self.parseItem( sections[3].xpath( './pre/text()').extract()[0].strip())
         if 5 in sections:
             citacoes = sections[5].xpath('./pre/a/text()').extract()
             citacoes = map(self.getId, citacoes)
-#    print "--------------------------------------------------------------------------"
-#    print 	acordaoId
-#    print	uf
-##    	tipo+'\n'+
-#    print 	relator
-#    print	dataJulg
-#    print 	dataPublic
-#    print	ementa
-#    print	decisao
-#    print   citacoes
-#    print "--------------------------------------------------------------------------"
+
         return StjItem(
                 acordaoId   = acordaoId,
                 localSigla  = localSigla.strip(),
@@ -154,9 +137,6 @@ class STJSpider(BaseSpider):
                 decisao     = decisao.strip(),
                 citacoes    = citacoes,
                 tribunal    = 'stj'
-           #  indexacao   = indexacao,
-           # legislacao  = legislacao,
-          #  observacao  = observacao
         )
 
     def getId( self, txt):
@@ -167,9 +147,8 @@ class STJSpider(BaseSpider):
         return a.strip()
     
     def parsePage( self, response):
+      #  t0 = time.time()
         sel = Selector(response)
-#    open_in_browser(response);
-#        inspect_response(response)
         doclist = sel.xpath(
             '/html/body/div[@id="divprincipal"]'+
             '/div[@class="minwidth"]'+
@@ -184,6 +163,9 @@ class STJSpider(BaseSpider):
         for doc in doclist:
             yield self.parseDoc( doc)
             self.fIndex = self.fIndex + 1
+    #    t1 = time.time()
+     #   print "tempo: "
+      #  print t1-t0
         nextPage = sel.xpath('//*[@id="navegacao"]/a/img[@src="/recursos/imagens/tocn.gif"]')
         if nextPage:
             yield Request( urlparse.urljoin('http://www.stj.jus.br/',
