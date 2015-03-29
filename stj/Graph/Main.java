@@ -12,8 +12,6 @@ public class Main {
 
     public static void main(String[] args) throws UnknownHostException {
 
-        Tree tree = new Tree();
-
         MongoClient mongoClient = new MongoClient();
         DB db = mongoClient.getDB( "test" );
 
@@ -26,17 +24,9 @@ public class Main {
         DBCursor cursorSTF = acordaosSTF.find();
         DBCursor cursorSTJ = acordaosSTJ.find();
 
-     /* while(cursor.hasNext()) {
-           String id = cursor.next().get("id").toString();
-           tree.add(id);
-        }
-
-        // tree.print();
-*/
         DBCollection links = db.getCollection("linksSTJ");
         links.drop();
  
-//        cursor = acordaos.find(new BasicDBObject("index", new BasicDBObject("$lte", 25000)));
 /*        BasicDBObject queryNotRanked = new BasicDBObject("linked", false);
         cursorSTF = acordaosSTF.find( queryNotRanked);
         cursorSTF.sort(new BasicDBObject("index", -1));
@@ -93,20 +83,12 @@ public class Main {
 
 
     private static void processAcordao( DBCollection acordaos, DBCollection links, DBObject acordao) {
-           // Finder finder = new Finder(bufferedReader, tree);
-           // finder.find();
-
             ArrayList<BasicDBObject> foundQuotes = new ArrayList<BasicDBObject>();
-//            ArrayList<String> ids = new ArrayList<String>(acordao.get("citacoes"));
             BasicDBList quotes = (BasicDBList) acordao.get("citacoes");
-        //    System.out.println("id: "+ acordao.get("acordaoId"));
             for( Object quote : quotes) {
                 BasicDBObject query = new BasicDBObject("acordaoId", (String)quote);
                 BasicDBObject foundQ = (BasicDBObject)acordaos.findOne(query);
-               // BasicDBObject quoteSTJ = (BasicDBObject) acordaos.findOne( new BasicDBObject("acordaoId",(String)quote));
                 if( foundQ != null) foundQuotes.add( foundQ);
-//                System.out.println("cit: "+(String)quote);
-//                if (foundQ != null) System.out.println("cit yes:"+ foundQ);
             }
 
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
@@ -114,7 +96,7 @@ public class Main {
             link.append("localSigla", acordao.get("localSigla"));
             link.append("local", acordao.get("local"));
             link.append("relator", acordao.get("relator"));
-            link.append("date", acordao.get("dataJulg"));
+            link.append("data", acordao.get("dataJulg"));
             link.append("quotesSomething", acordao.get("quotesSomething"));
             link.append("tribunal", acordao.get("tribunal"));
             link.append("citacoes", foundQuotes);
