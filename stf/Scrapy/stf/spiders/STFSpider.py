@@ -129,12 +129,13 @@ class STFSpider(BaseSpider):
                '&base=baseAcordaos')
 
     def parseItem( self, text ):
-        text = html2text.html2text( text)
+#        text = html2text.html2text( text)
 #        text = text.decode("iso-8859-1").encode('utf-8')
         text = text.encode("utf-8")
-        text = text.strip()
 #        text = text.decode('iso-8859-1')
-        text = text.replace('\\r', '')
+        text = text.replace("\r\n", ' ')
+        text = text.replace("\n", ' ')
+        text = text.strip()
         return text
 
     def orderSections( self, sectHeaders, sectBody, possHeaders):
