@@ -6,6 +6,7 @@ from stf.items import StfItem
 import re
 import time
 from datetime import datetime, timedelta
+from scrapy.http import Request
 
 def findId( text):
     return text
@@ -14,28 +15,122 @@ def findId( text):
 class STFSpider(BaseSpider):
 
     name = 'stfSpider'
+    lexicDict = {}
 
     def __init__ ( self, iDate, fDate, page, index):
         self.domain = 'stf.jus.br'
-        self.ids = {}
-        self.relators = {}
-        self.ufs = {}
-        self.dataJulgs = {}
-        self.tags = {}
-        self.partesType = {}
-        self.index = int(index)
-        self.fIndex = int(index)
-        self.start_urls = [
-            'http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?'+
-            's1=%28%40JULG+%3E%3D+'+
-             iDate +                 # data inicial
-            '%29%28%40JULG+%3C%3D+'+
-             fDate +                 # data final
-            '%29'+
-            '&pagina='+page+
-            '&base=baseAcordaos'
-        ]
+        self.index  = self.fIndex = int(index)
+        self.iDate  = iDate
+        self.fDate  = fDate
+        self.page   = int(page)
+        self.start_urls = [ self.urlPage( page) ]
     
+    def parse( self, response ):
+        print "\n\n\n\n"
+        print 'parse method\n\n'
+        sel = Selector(response)
+        body = sel.xpath(
+            '/html/body/div[@id="pagina"]'+
+            '/div[@id="conteiner"]'+
+            '/div[@id="corpo"]'+
+            '/div[@class="conteudo"]'+
+            '/div[@id="divImpressao"]'+
+            '/div[@class="abasAcompanhamento"]'+
+            '/div[@class="processosJurisprudenciaAcordaos"]'
+        )
+        possHeaders = [
+            'Parte',   
+            'Decis',     # strong/p/strong/text() sec strong/p
+            'Indexa',   # p/strong/text() sec next pre
+            'Legisla',  # p/strong/text() sec next pre
+            'Observa',  # p/strong/text() sec next pre
+            'Doutrina'    # p/strong/text() sec next pre
+        ]
+        for doc in body:
+            yield self.parseDoc( doc, possHeaders)        
+        #nextPage = sel.xpath('//*[@id="divNaoImprimir"]/table[2]/tbody/tr/td/table/tbody/tr/td[1]/p/span/a')
+        self.page += 1
+        nextPage = self.urlPage( self.page) 
+        print "\n\n\n\n\n\n\n"
+        print nextPage
+        print "\n\n\n\n\n\n\n"
+        yield Request( nextPage, callback = self.parse)
+        
+#        self.printItem(item)
+   #     self.testItem(item)
+    #   self.printItem(item)
+    def parseDoc( self, doc, possHeaders):
+        self.fIndex += 1
+        title = doc.xpath('p[1]/strong/text()').extract()
+        titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
+        #acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
+        acordaoId = (titleLine.group(1).replace('-',' ')).strip()
+#       uf = self.parseItem( titleLine.group(2))
+        ufShort = titleLine.group(2)
+        uf = titleLine.group(3)
+        relator = re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1)
+        dataJulg = orgaoJulg =''
+        for line in title[1:]:
+            line = line.replace('&nbsp', '')
+            line = self.parseItem( line)
+            if line.startswith('Julgamento'):
+                julgLine = re.match('Julgamento:\s*(\d{2})\/(\d{2})\/(\d{4})\s*.* Julgador:\s*(.*)', line)
+                dataJulg = datetime( int(julgLine.group(3)), int(julgLine.group(2)), int(julgLine.group(1)))
+                orgaoJulg = julgLine.group(4)
+                break
+        publicacao  = self.parseItem( doc.xpath('pre[1]/text()').extract()[0]).strip()
+        ementa      = self.parseItem( doc.xpath('strong[1]/p/text()').extract()[1]).strip()
+        sectHeaders = doc.xpath('p/strong/text()').extract()[len(title)+1:-1]
+        sectBody    = doc.xpath('pre/text()').extract()[1:]
+        sections  = self.orderSections(  sectHeaders, sectBody, possHeaders)
+        decision  = laws = obs = doutrines = result =''
+        quotes = tags = [] 
+        partes    = self.parseItem( self.getFoundSection( 0, sections)).strip()
+        decision  = self.parseItem( self.getFoundSection( 1, sections)).strip()
+        tags      = self.parseItem( self.getFoundSection( 2, sections)).strip()
+        laws      = self.parseItem( self.getFoundSection( 3, sections)).strip()
+        obs       = self.parseItem( self.getFoundSection( 4, sections)).strip()
+        doutrines = self.parseItem( self.getFoundSection( 5, sections)).strip()
+        if tags:
+            tags = re.split(r'[\n,\-.]+', tags)
+            for j in range( len(tags)):
+                tags[j] = tags[j].strip()
+            tags = filter(None, tags)
+        if obs:
+            quotes = self.getAcordaosQuotes( obs)
+
+        item = StfItem(
+            acordaoId   = acordaoId,
+            localSigla  = ufShort,
+            local       = uf,
+#           publicacao  = publicacao,
+            dataJulg    = dataJulg,
+            partes      = partes,
+            relator     = relator,
+            ementa      = ementa,
+            decisao     = decision,
+            citacoes    = quotes,
+            legislacao  = laws,
+            doutrinas   = doutrines,
+            observacao  = obs, 
+            tags        = tags, 
+            tribunal    = "stf",
+            index       = self.fIndex
+        )
+        self.addItemToDict( item)
+        return item
+  
+    def urlPage( self, n):
+        return (
+               'http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?'+
+               's1=%28%40JULG+%3E%3D+'+
+                self.iDate +                 
+               '%29%28%40JULG+%3C%3D+'+
+                self.fDate +                 
+               '%29'+
+               '&pagina='+ str(n) +
+               '&base=baseAcordaos')
+
     def parseItem( self, item ):
       #  text = item.replace("&nbsp", '')
         text = html2text.html2text( item)
@@ -88,126 +183,36 @@ class STFSpider(BaseSpider):
  #       if temp:
   #          temp
    #         print result
+
     def getFoundSection( self, n, sections):
         if n in sections.keys():
             return sections[n]
         else:
             return ''
 
-    def parse( self, response ):
-        print "\n\n\n\n"
-        print 'parse method\n\n'
-        sel = Selector(response)
-        body = sel.xpath(
-            '/html/body/div[@id="pagina"]'+
-            '/div[@id="conteiner"]'+
-            '/div[@id="corpo"]'+
-            '/div[@class="conteudo"]'+
-            '/div[@id="divImpressao"]'+
-            '/div[@class="abasAcompanhamento"]'+
-            '/div[@class="processosJurisprudenciaAcordaos"]'
-        )
-        for doc in body:
-            title = doc.xpath('p[1]/strong/text()').extract()
-            titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
-            #acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
-            acordaoId = (titleLine.group(1).replace('-',' ')).strip()
-#            uf = self.parseItem( titleLine.group(2))
-            ufShort = titleLine.group(2)
-            uf = titleLine.group(3)
-            relator = re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1)
-            dataJulg = orgaoJulg =''
-            for line in title[1:]:
-                line = line.replace('&nbsp', '')
-                line = self.parseItem( line)
-                if line.startswith('Julgamento'):
-                    julgLine = re.match('Julgamento:\s*(\d{2})\/(\d{2})\/(\d{4})\s*.* Julgador:\s*(.*)', line)
-                    dataJulg = datetime( int(julgLine.group(3)), int(julgLine.group(2)), int(julgLine.group(1)))
-                    orgaoJulg = julgLine.group(4)
-                    break
-            publicacao  = self.parseItem( doc.xpath('pre[1]/text()').extract()[0]).strip()
-            ementa      = self.parseItem( doc.xpath('strong[1]/p/text()').extract()[1]).strip()
-            sectHeaders = doc.xpath('p/strong/text()').extract()[len(title)+1:-1]
-            sectBody    = doc.xpath('pre/text()').extract()[1:]
-            possHeaders = [
-                'Parte',   
-                'Decis',     # strong/p/strong/text() sec strong/p
-                'Indexa',   # p/strong/text() sec next pre
-                'Legisla',  # p/strong/text() sec next pre
-                'Observa',  # p/strong/text() sec next pre
-                'Doutrina'    # p/strong/text() sec next pre
-            ]
-            self.fIndex += 1
-            sections  = self.orderSections(  sectHeaders, sectBody, possHeaders)
-            decision  = tags = laws = obs = doutrines = quotes = result =''
-            
-            partes    = self.parseItem( self.getFoundSection( 0, sections)).strip()
-            decision  = self.parseItem( self.getFoundSection( 1, sections)).strip()
-            tags      = self.parseItem( self.getFoundSection( 2, sections)).strip()
-            laws      = self.parseItem( self.getFoundSection( 3, sections)).strip()
-            obs       = self.parseItem( self.getFoundSection( 4, sections)).strip()
-            doutrines = self.parseItem( self.getFoundSection( 5, sections)).strip()
+    def addWordsToDict( self, string):
+        global lexicDict
+        keys = lexicDict.keys()
+        for w in string.strip(",.;\(\)<>?\\: \n\t\r"):
+            if w in keys:
+                lexicDict[ w] += 1
+            else:
+                lexicDict[ w] = 1
 
-            if tags:
-                tags = re.split(r'[\n,\-.]+', tags)
-                for j in range( len(tags)):
-                    tags[j] = tags[j].strip()
-                tags = filter(None, tags)
-            if obs:
-                quotes = self.getAcordaosQuotes( obs)
-
-            yield StfItem(
-                acordaoId   = acordaoId,
-                localSigla  = ufShort,
-                local       = uf,
-#                publicacao  = publicacao,
-                dataJulg    = dataJulg,
-                partes      = partes,
-                relator     = relator,
-                ementa      = ementa,
-                decisao     = decision,
-                citacoes    = quotes,
-                legislacao  = laws,
-                doutrinas   = doutrines,
-                observacao  = obs, 
-                tags        = tags, 
-                tribunal    = "stf" 
-            ) 
-#            self.printItem(item)
-   #         self.testItem(item)
-        #    self.printItem(item)
-           # f = open( '../files/stf'+str(self.index).zfill(6)+'.xml', 'w' )
-           # f.write(html2text.html2text( div ).encode('utf-8'))
-           # self.index = self.index + 1
-#        self.writeTestLog( self.relators, 'tests/relatorsList')
- #       self.writeTestLog( self.ids, 'tests/idsList')
-  #      self.writeTestLog( self.ufs, 'tests/ufsList')
-   
-    def addToDict( self, dic, item):
-        keys = dic.keys()
-        if item in keys:
-            dic[item] += 1
-        else:
-            dic[item] = 1
-        return dic
-
-    def testItem( self, item):
-        self.relators = self.addToDict( self.relators, item['relator'])
-        self.ids = self.addToDict( self.ids, item['acordaoId'])
-        self.ufs = self.addToDict( self.ufs, item['uf'])
-    
-    def writeTestLog(self, dataDict, outputFile):
-        with open( outputFile, 'a') as f:
-            for v in dataDict.keys():
-                data = v.encode('utf-8').strip()+' :'+ '{:<30}'.format(str( dataDict[v]))
-                f.write( data) 
-                f.write('\n-------------------------------------------------------------\n')
-     
+    def addItemToDict( self, item):
+        self.addWordsToDict( item['local'])
+        self.addWordsToDict( item['partes'])
+        self.addWordsToDict( item['ementa'])
+        self.addWordsToDict( item['decisao'])
+        self.addWordsToDict( item['observacao'])
+        for w in item["tags"]:
+            self.addWordsToDict( w)
+ 
     def printItem( self, item):
         print '-------------------------------------------------------------'
         print 'relator:\n'+item['relator']
         print '\nId:\n'+item['acordaoId']
-        print '\nuf:\n'+item['uf']
+        print '\nlocal:\n'+item['local']
         print '\ndataJulg:\n'+item['dataJulg']
 #        print '\norgaoJulg:\n'+item['orgaoJulg']
 #        print '\npublic:\n'+item.publicacao
