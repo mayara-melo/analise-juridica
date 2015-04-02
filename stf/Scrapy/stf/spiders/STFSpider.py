@@ -6,12 +6,9 @@ import html2text
 from stf.items import StfItem
 import re
 import time
+from CorpusBuilder import CorpusBuilder
 from datetime import datetime, timedelta
 from scrapy.http import Request
-
-def findId( text):
-    return text
-
 
 class STFSpider(BaseSpider):
 
@@ -23,12 +20,27 @@ class STFSpider(BaseSpider):
         self.iDate  = iDate
         self.fDate  = fDate
         self.page   = int(page)
-        self.lexicDict = {}
+        self.corpus = CorpusBuilder()
         self.start_urls = [ self.urlPage( page) ]
-    
-    def parse( self, response ):
-        print "\n\n\n\n"
-        print 'parse method\n\n'
+
+    def parse( self, response):
+        sel = Selector(response)
+        nPagesFound = 0
+        body = sel.xpath(
+            '/html/body/div[@id="pagina"]'+
+            '/div[@id="conteiner"]'+
+            '/div[@id="corpo"]'+
+            '/div[@class="conteudo"]'+
+            '/div[@id="divNaoImprimir"][2]'+
+            '/table[1]/tr/td[2]/text()').extract()
+        r = re.search(r"([0-9]+)", str(body))
+        if r:
+            nPagesFound = int(r.group(1))/10+1
+        for p in range(self.page, nPagesFound+1):
+            yield Request( self.urlPage( p), callback = self.parsePage)
+        self.corpus.print2File( "lexicSTF")
+
+    def parsePage( self, response ):
         sel = Selector(response)
         body = sel.xpath(
             '/html/body/div[@id="pagina"]'+
@@ -50,14 +62,14 @@ class STFSpider(BaseSpider):
         for doc in body:
             self.parseDoc( doc, possHeaders)        
         #nextPage = sel.xpath('//*[@id="divNaoImprimir"]/table[2]/tbody/tr/td/table/tbody/tr/td[1]/p/span/a')
-        self.page += 1
-        if self.page == 3:
-            self.printDict2File( self.lexicDict)
-            return
-        nextPage = self.urlPage( self.page) 
-        print nextPage
-        print "\n\n"
-        yield Request( nextPage, callback = self.parse)       
+#        self.page += 1
+#        if self.page > self.npagesFound:
+ #           self.corpus.print2File( "lexicSTF")
+  #          return
+  #      nextPage = self.urlPage( self.page) 
+#        print nextPage
+ #       print "\n\n"
+ #       yield Request( nextPage, callback = self.parse)       
 #       self.printItem(item)
 
     def parseDoc( self, doc, possHeaders):
@@ -118,7 +130,7 @@ class STFSpider(BaseSpider):
             tribunal    = "stf",
             index       = self.fIndex
         )
-        self.addItemToDict( item)
+        self.addItemToCorpus( item, self.corpus)
         return item
   
     def urlPage( self, n):
@@ -133,13 +145,11 @@ class STFSpider(BaseSpider):
                '&base=baseAcordaos')
 
     def parseItem( self, text ):
-      #  text = item.replace("&nbsp", '')
         text = html2text.html2text( text)
 #        text = text.decode("iso-8859-1").encode('utf-8')
         text = text.encode("utf-8")
 #        text = text.decode('iso-8859-1')
         text = text.replace('\\r', '')
-       # text = text.replace('\r\n', '')
         return text
 
     def orderSections( self, sectHeaders, sectBody, possHeaders):
@@ -193,38 +203,15 @@ class STFSpider(BaseSpider):
         else:
             return ''
 
-    def addWordsToDict( self, string):
-        keys = self.lexicDict.keys()
-#        words = string.split("[\W\s]")
-        for w in re.split(r"[\s\(\),.?;:\"\']+", string):
-#            print w
-            if w in keys:
-                self.lexicDict[ w] += 1
-            else:
-                self.lexicDict[ w] = 1
-
-    def addItemToDict( self, item ):
-        self.addWordsToDict( item['local'])
-        self.addWordsToDict( item['partes'])
-        self.addWordsToDict( item['ementa'])
-        self.addWordsToDict( item['decisao'])
-        self.addWordsToDict( item['observacao'])
+    def addItemToCorpus( self, item, corpus):
+        corpus.addWords( item['local'])
+        corpus.addWords( item['partes'])
+        corpus.addWords( item['ementa'])
+        corpus.addWords( item['decisao'])
+        corpus.addWords( item['observacao'])
         for w in item["tags"]:
-            self.addWordsToDict( w)
+            corpus.addWords( w)
  
-    def printDict2File( self, dic):
-        file = open('lexicalDict', 'a')
-        for k in dic:
-            k = k.casefold()
-            w = k.decode("utf-8").encode("iso-8859-1")
-#            file.write( '{0:20} ==> {1:10d}'.format( k.encode('utf8'), dic[k]) )
-            file.write( '%20s ==> %10d\n' % (w, dic[k]))
-   #         print k
-  #          file.write( w)
-   #         file.write( str(dic[k]))
-    #        file.write( "\n\n")
-        file.close() 
-
     def printItem( self, item):
         print '-------------------------------------------------------------'
         print 'relator:\n'+item['relator']
