@@ -76,19 +76,19 @@ class STFSpider(BaseSpider):
                 dataJulg = datetime( int(julgLine.group(3)), int(julgLine.group(2)), int(julgLine.group(1)))
                 orgaoJulg = julgLine.group(4)
                 break
-        publicacao  = self.parseItem( doc.xpath('pre[1]/text()').extract()[0]).strip()
-        ementa      = self.parseItem( doc.xpath('strong[1]/p/text()').extract()[1]).strip()
+        publicacao  = self.parseItem( doc.xpath('pre[1]/text()').extract()[0])
+        ementa      = self.parseItem( doc.xpath('strong[1]/p/text()').extract()[1])
         sectHeaders = doc.xpath('p/strong/text()').extract()[len(title)+1:-1]
         sectBody    = doc.xpath('pre/text()').extract()[1:]
         sections  = self.orderSections(  sectHeaders, sectBody, possHeaders)
         decision  = laws = obs = doutrines = result =''
         quotes = tags = [] 
-        partes    = self.parseItem( self.getFoundSection( 0, sections)).strip()
-        decision  = self.parseItem( self.getFoundSection( 1, sections)).strip()
-        tags      = self.parseItem( self.getFoundSection( 2, sections)).strip()
-        laws      = self.parseItem( self.getFoundSection( 3, sections)).strip()
-        obs       = self.parseItem( self.getFoundSection( 4, sections)).strip()
-        doutrines = self.parseItem( self.getFoundSection( 5, sections)).strip()
+        partes    = self.parseItem( self.getFoundSection( 0, sections))
+        decision  = self.parseItem( self.getFoundSection( 1, sections))
+        tags      = self.parseItem( self.getFoundSection( 2, sections))
+        laws      = self.parseItem( self.getFoundSection( 3, sections))
+        obs       = self.parseItem( self.getFoundSection( 4, sections))
+        doutrines = self.parseItem( self.getFoundSection( 5, sections))
         if tags:
             tags = re.split(r'[\n,\-.]+', tags)
             for j in range( len(tags)):
@@ -132,6 +132,7 @@ class STFSpider(BaseSpider):
         text = html2text.html2text( text)
 #        text = text.decode("iso-8859-1").encode('utf-8')
         text = text.encode("utf-8")
+        text = text.strip()
 #        text = text.decode('iso-8859-1')
         text = text.replace('\\r', '')
         return text
