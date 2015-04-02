@@ -6,13 +6,12 @@ import html2text
 from stf.items import StfItem
 import re
 import time
-from CorpusBuilder import CorpusBuilder
 from datetime import datetime, timedelta
 from scrapy.http import Request
 
 class STFSpider(BaseSpider):
 
-    name = 'stfSpider'
+    name = 'stf'
 
     def __init__ ( self, iDate, fDate, page, index):
         self.domain = 'stf.jus.br'
@@ -20,12 +19,11 @@ class STFSpider(BaseSpider):
         self.iDate  = iDate
         self.fDate  = fDate
         self.page   = int(page)
-        self.corpus = CorpusBuilder()
         self.start_urls = [ self.urlPage( page) ]
 
     def parse( self, response):
+        npagesFound = 0
         sel = Selector(response)
-        nPagesFound = 0
         body = sel.xpath(
             '/html/body/div[@id="pagina"]'+
             '/div[@id="conteiner"]'+
@@ -35,10 +33,9 @@ class STFSpider(BaseSpider):
             '/table[1]/tr/td[2]/text()').extract()
         r = re.search(r"([0-9]+)", str(body))
         if r:
-            nPagesFound = int(r.group(1))/10+1
-        for p in range(self.page, nPagesFound+1):
+            npagesFound = int(r.group(1))/10+1
+        for p in range(self.page, npagesFound+1):
             yield Request( self.urlPage( p), callback = self.parsePage)
-        self.corpus.print2File( "lexicSTF")
 
     def parsePage( self, response ):
         sel = Selector(response)
@@ -60,25 +57,13 @@ class STFSpider(BaseSpider):
             'Doutrina'    # p/strong/text() sec next pre
         ]
         for doc in body:
-            self.parseDoc( doc, possHeaders)        
-        #nextPage = sel.xpath('//*[@id="divNaoImprimir"]/table[2]/tbody/tr/td/table/tbody/tr/td[1]/p/span/a')
-#        self.page += 1
-#        if self.page > self.npagesFound:
- #           self.corpus.print2File( "lexicSTF")
-  #          return
-  #      nextPage = self.urlPage( self.page) 
-#        print nextPage
- #       print "\n\n"
- #       yield Request( nextPage, callback = self.parse)       
-#       self.printItem(item)
+            yield self.parseDoc( doc, possHeaders)
 
     def parseDoc( self, doc, possHeaders):
         self.fIndex += 1
         title = doc.xpath('p[1]/strong/text()').extract()
         titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
-#        acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
         acordaoId = (titleLine.group(1).replace('-',' ')).strip()
-#       uf = self.parseItem( titleLine.group(2))
         ufShort = self.parseItem( titleLine.group(2))
         uf = self.parseItem( titleLine.group(3))
         relator = self.parseItem( re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1))
@@ -130,7 +115,6 @@ class STFSpider(BaseSpider):
             tribunal    = "stf",
             index       = self.fIndex
         )
-        self.addItemToCorpus( item, self.corpus)
         return item
   
     def urlPage( self, n):
@@ -203,15 +187,6 @@ class STFSpider(BaseSpider):
         else:
             return ''
 
-    def addItemToCorpus( self, item, corpus):
-        corpus.addWords( item['local'])
-        corpus.addWords( item['partes'])
-        corpus.addWords( item['ementa'])
-        corpus.addWords( item['decisao'])
-        corpus.addWords( item['observacao'])
-        for w in item["tags"]:
-            corpus.addWords( w)
- 
     def printItem( self, item):
         print '-------------------------------------------------------------'
         print 'relator:\n'+item['relator']
