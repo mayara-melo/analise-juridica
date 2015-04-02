@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from scrapy.selector import Selector
 from scrapy.spider import BaseSpider
 import html2text
@@ -15,7 +16,6 @@ def findId( text):
 class STFSpider(BaseSpider):
 
     name = 'stfSpider'
-    lexicDict = {}
 
     def __init__ ( self, iDate, fDate, page, index):
         self.domain = 'stf.jus.br'
@@ -23,6 +23,7 @@ class STFSpider(BaseSpider):
         self.iDate  = iDate
         self.fDate  = fDate
         self.page   = int(page)
+        self.lexicDict = {}
         self.start_urls = [ self.urlPage( page) ]
     
     def parse( self, response ):
@@ -47,28 +48,28 @@ class STFSpider(BaseSpider):
             'Doutrina'    # p/strong/text() sec next pre
         ]
         for doc in body:
-            yield self.parseDoc( doc, possHeaders)        
+            self.parseDoc( doc, possHeaders)        
         #nextPage = sel.xpath('//*[@id="divNaoImprimir"]/table[2]/tbody/tr/td/table/tbody/tr/td[1]/p/span/a')
         self.page += 1
+        if self.page == 3:
+            self.printDict2File( self.lexicDict)
+            return
         nextPage = self.urlPage( self.page) 
-        print "\n\n\n\n\n\n\n"
         print nextPage
-        print "\n\n\n\n\n\n\n"
-        yield Request( nextPage, callback = self.parse)
-        
-#        self.printItem(item)
-   #     self.testItem(item)
-    #   self.printItem(item)
+        print "\n\n"
+        yield Request( nextPage, callback = self.parse)       
+#       self.printItem(item)
+
     def parseDoc( self, doc, possHeaders):
         self.fIndex += 1
         title = doc.xpath('p[1]/strong/text()').extract()
         titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
-        #acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
+#        acordaoId = self.parseItem( (titleLine.group(1)).replace('-',' '))
         acordaoId = (titleLine.group(1).replace('-',' ')).strip()
 #       uf = self.parseItem( titleLine.group(2))
-        ufShort = titleLine.group(2)
-        uf = titleLine.group(3)
-        relator = re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1)
+        ufShort = self.parseItem( titleLine.group(2))
+        uf = self.parseItem( titleLine.group(3))
+        relator = self.parseItem( re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1))
         dataJulg = orgaoJulg =''
         for line in title[1:]:
             line = line.replace('&nbsp', '')
@@ -131,10 +132,12 @@ class STFSpider(BaseSpider):
                '&pagina='+ str(n) +
                '&base=baseAcordaos')
 
-    def parseItem( self, item ):
+    def parseItem( self, text ):
       #  text = item.replace("&nbsp", '')
-        text = html2text.html2text( item)
-        text = text.encode('utf-8')
+        text = html2text.html2text( text)
+#        text = text.decode("iso-8859-1").encode('utf-8')
+        text = text.encode("utf-8")
+#        text = text.decode('iso-8859-1')
         text = text.replace('\\r', '')
        # text = text.replace('\r\n', '')
         return text
@@ -191,15 +194,16 @@ class STFSpider(BaseSpider):
             return ''
 
     def addWordsToDict( self, string):
-        global lexicDict
-        keys = lexicDict.keys()
-        for w in string.strip(",.;\(\)<>?\\: \n\t\r"):
+        keys = self.lexicDict.keys()
+#        words = string.split("[\W\s]")
+        for w in re.split(r"[\s\(\),.?;:\"\']+", string):
+#            print w
             if w in keys:
-                lexicDict[ w] += 1
+                self.lexicDict[ w] += 1
             else:
-                lexicDict[ w] = 1
+                self.lexicDict[ w] = 1
 
-    def addItemToDict( self, item):
+    def addItemToDict( self, item ):
         self.addWordsToDict( item['local'])
         self.addWordsToDict( item['partes'])
         self.addWordsToDict( item['ementa'])
@@ -208,6 +212,19 @@ class STFSpider(BaseSpider):
         for w in item["tags"]:
             self.addWordsToDict( w)
  
+    def printDict2File( self, dic):
+        file = open('lexicalDict', 'a')
+        for k in dic:
+            k = k.casefold()
+            w = k.decode("utf-8").encode("iso-8859-1")
+#            file.write( '{0:20} ==> {1:10d}'.format( k.encode('utf8'), dic[k]) )
+            file.write( '%20s ==> %10d\n' % (w, dic[k]))
+   #         print k
+  #          file.write( w)
+   #         file.write( str(dic[k]))
+    #        file.write( "\n\n")
+        file.close() 
+
     def printItem( self, item):
         print '-------------------------------------------------------------'
         print 'relator:\n'+item['relator']
