@@ -38,6 +38,7 @@ class STFSpider(BaseSpider):
             yield Request( self.urlPage( p), callback = self.parsePage)
 
     def parsePage( self, response ):
+        unicode(response.body.decode(response.encoding)).encode('utf-8')
         sel = Selector(response)
         body = sel.xpath(
             '/html/body/div[@id="pagina"]'+
@@ -129,10 +130,6 @@ class STFSpider(BaseSpider):
                '&base=baseAcordaos')
 
     def parseItem( self, text ):
-#        text = html2text.html2text( text)
-#        text = text.decode("iso-8859-1").encode('utf-8')
-        text = text.encode("utf-8")
-#        text = text.decode('iso-8859-1')
         text = text.replace("\r\n", ' ')
         text = text.replace("\n", ' ')
         text = text.strip()
