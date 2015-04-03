@@ -160,9 +160,12 @@ class STJSpider(BaseSpider):
         otherQuotes = sel.xpath( "./pre/text()").extract()
         for q in otherQuotes:
             q = q.upper()
-            m = re.search( r"ST[FJ]\s*-\s*([\D]+[\d]+)[-]?", q)
+            m = re.match( r"\s*(?:ST[FJ][\s-]*)?([A-Z -]+[\d]+)[-]?.*", q)
             if m:
                 q = m.group(1).strip()
+                print "\n"
+                print q
+                print "\n"
                 quotes.append( q)
         return quotes
         
