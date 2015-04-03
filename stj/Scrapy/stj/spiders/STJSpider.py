@@ -5,7 +5,6 @@ from scrapy.http import FormRequest, Request
 from scrapy.utils.response import open_in_browser
 from stj.items import StjItem
 import urlparse
-import html2text
 import re
 from scrapy.shell import inspect_response
 from datetime import datetime, timedelta
@@ -26,7 +25,7 @@ class STJSpider(BaseSpider):
     def getParametersFromFile( self):
         print 'getting initial date and num previous acordaos from file'
         file = open("../update_settings", 'r')
-        prevIndex = file.readline() #first line should be the number of acordaos previously scraped
+        prevIndex = file.readline()
         prevFinalDate = file.readline()
         if prevIndex and prevFinalDate:
             self.iIndex = int( prevIndex) +1
@@ -61,6 +60,53 @@ class STJSpider(BaseSpider):
             formname='frmConsulta',
             formdata={'livre':'(@DTDE >="'+self.iDate+'") E (@DTDE <="'+self.fDate+'")', 'b':'ACOR'},
             callback=self.parsePage
+        )
+
+    def parseDoc( self, doc):
+        relator = dataJulg = dataPublic = ementa = decisao = notas = leis =''
+        citacoes = []
+        possSection = [
+            'Data do Julg',           #0
+            'Data da Publ',           #1
+            'Ementa',                 #2
+            'Ac',                #3
+            'Refer',                  #4
+            'Veja'                    #5
+        ]
+        sectionsSel =  doc.xpath('.//div[@class="paragrafoBRS"]')
+        # Permanent order sections
+        processo   = self.extractText( sectionsSel[0], './div[@class="docTexto docRepetitivo"]/text()')
+        acordaoId  = self.getReversedId( self.getMatchText( processo, r"\s*([^\/]*).*"))
+        localSigla = self.getMatchText( processo, r"[^\/]*\/\s*(..).*")
+        relator    = self.extractText( sectionsSel[1], './pre/text()')
+        relator    = self.getMatchText( relator, r"M[A-Za-z\)\(:.]*\W*([^\(]*).*")
+ 
+        # Facultative/unordered sections
+        sections = self.orderSections( sectionsSel, possSection)
+        dataJulg = self.extractText( sections[0], './pre/span/text()' )
+        dataJulg = datetime( int(self.getMatchText( dataJulg, r"\d\d\/\d\d\/(\d{4})")),
+                             int(self.getMatchText( dataJulg, r"\d\d\/(\d\d)\/\d{4}")),
+                             int(self.getMatchText( dataJulg, r"(\d\d)\/\d\d\/\d{4}"))
+                            )
+        if 1 in sections:
+            dataPublic = sections[1].xpath( './pre/text()').extract()
+            dataPublic = re.search(r"(\d{2})\/(\d{2})\/(\d{4})" ,self.parseItem((''.join(dataPublic))))
+            dataPublic = datetime( int(dataPublic.group(3)), int(dataPublic.group(2)), int(dataPublic.group(1)))
+        ementa = self.extractText( sections[2], './pre/text()')
+        decisao =  self.extractText( sections[3], './pre/text()')
+        if 5 in sections:
+            citacoes = self.getQuotations( sections[5])
+        return StjItem(
+                acordaoId   = acordaoId,
+                localSigla  = localSigla,
+                dataPublic  = dataPublic,
+                dataJulg    = dataJulg,
+                relator     = relator,
+                ementa      = ementa,
+                decisao     = decisao,
+                citacoes    = citacoes,
+                index       = self.fIndex,
+                tribunal    = 'stj'
         )
 
     def parseItem( self, text):
@@ -99,65 +145,29 @@ class STJSpider(BaseSpider):
         else:
             return (match.group(1)).strip()
 
-    def parseDoc( self, doc):
-        relator = dataJulg = dataPublic = ementa = decisao = notas = leis =''
-        citacoes = []
-        possSection = [
-            'Data do Julg',           #0
-            'Data da Publ',           #1
-            'Ementa',                 #2
-            'Ac',                     #3
-            'Refer',                  #4
-            'Veja'                    #5
-        ]
-        sectionsSel =  doc.xpath('.//div[@class="paragrafoBRS"]')
-        # Permanent order sections
-        processo   = self.extractText( sectionsSel[0], './div[@class="docTexto docRepetitivo"]/text()')
-        acordaoId  = self.getMatchText( processo, r"\s*([^\/]*).*").strip()
-        localSigla = self.getMatchText( processo, r"[^\/]*\/\s*(..).*")
-        relator    = self.extractText( sectionsSel[1], './pre/text()')
-        relator    = self.getMatchText( relator, r"M[A-Za-z\)\(:.]*\W*([^\(]*).*")
- 
-        # Facultative/unordered sections
-        sections = self.orderSections( sectionsSel, possSection)
-        dataJulg = self.extractText( sections[0], './pre/span/text()' )
-        dataJulg = datetime( int(self.getMatchText( dataJulg, r"\d\d\/\d\d\/(\d{4})")),
-                             int(self.getMatchText( dataJulg, r"\d\d\/(\d\d)\/\d{4}")),
-                             int(self.getMatchText( dataJulg, r"(\d\d)\/\d\d\/\d{4}"))
-                            )
-        if 1 in sections:
-            dataPublic = sections[1].xpath( './pre/text()').extract()
-            dataPublic = re.search(r"(\d{2})\/(\d{2})\/(\d{4})" ,self.parseItem((''.join(dataPublic))))
-            dataPublic = datetime( int(dataPublic.group(3)), int(dataPublic.group(2)), int(dataPublic.group(1)))
-        ementa = self.extractText( sections[2], './pre/text()')
-        decisao =  self.extractText( sections[3], './pre/text()')
-        if 5 in sections:
-            citacoes = sections[5].xpath('./pre/a/text()').extract()
-            citacoes = map(self.getId, citacoes)
-
-        return StjItem(
-                acordaoId   = acordaoId,
-                localSigla  = localSigla,
-                dataPublic  = dataPublic,
-                dataJulg    = dataJulg,
-                relator     = relator,
-                ementa      = ementa,
-                decisao     = decisao,
-                citacoes    = citacoes,
-                index       = self.fIndex,
-                tribunal    = 'stj'
-        )
-
-    def getId( self, txt):
+    def getReversedId( self, txt):
         acId = re.split( r" [nN][oOaA][sS]? ", txt.strip())
         a = ''
         for i in reversed(acId):
             a = a + i +' '
-        return a.strip()
-    
+        return a.upper().strip()
+
+    def getQuotations( self, sel):
+        quotes = []
+        linkedQuotes = sel.xpath('./pre/a/text()').extract()
+        for l in linkedQuotes:
+            quotes.append( self.getReversedId( l.upper()))
+        otherQuotes = sel.xpath( "./pre/text()").extract()
+        for q in otherQuotes:
+            q = q.upper()
+            m = re.search( r"ST[FJ]\s*-\s*([\D]+[\d]+)[-]?", q)
+            if m:
+                q = m.group(1).strip()
+                quotes.append( q)
+        return quotes
+        
     def parsePage( self, response):
         unicode(response.body.decode(response.encoding)).encode('utf-8')
-      #  t0 = time.time()
         sel = Selector(response)
         doclist = sel.xpath(
             '/html/body/div[@id="divprincipal"]'+
@@ -173,9 +183,6 @@ class STJSpider(BaseSpider):
         for doc in doclist:
             yield self.parseDoc( doc)
             self.fIndex = self.fIndex + 1
-    #    t1 = time.time()
-     #   print "tempo: "
-      #  print t1-t0
         nextPage = sel.xpath('//*[@id="navegacao"]/a/img[@src="/recursos/imagens/tocn.gif"]')
         if nextPage:
             yield Request( urlparse.urljoin('http://www.stj.jus.br/',
