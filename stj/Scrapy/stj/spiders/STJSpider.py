@@ -94,6 +94,8 @@ class STJSpider(BaseSpider):
             dataPublic = datetime( int(dataPublic.group(3)), int(dataPublic.group(2)), int(dataPublic.group(1)))
         ementa = self.extractText( sections[2], './pre/text()')
         decisao =  self.extractText( sections[3], './pre/text()')
+        if 4 in sections:
+            leis = self.getLaws( sections[4])
         if 5 in sections:
             citacoes = self.getQuotations( sections[5])
         return StjItem(
@@ -105,6 +107,7 @@ class STJSpider(BaseSpider):
                 ementa      = ementa,
                 decisao     = decisao,
                 citacoes    = citacoes,
+                legislacao  = leis,
                 index       = self.fIndex,
                 tribunal    = 'stj'
         )
@@ -163,12 +166,24 @@ class STJSpider(BaseSpider):
             m = re.match( r"\s*(?:ST[FJ][\s-]*)?([A-Z -]+[\d]+)[-]?.*", q)
             if m:
                 q = m.group(1).strip()
-                print "\n"
-                print q
-                print "\n"
                 quotes.append( q)
         return quotes
         
+    def getLaws( self, sel):    
+        laws = []
+        linked = sel.xpath('./pre/a/text()').extract()
+        for l in linked:
+            print l
+            l = re.match( r"\s*LEG:FED ...:(\d+)(?: ANO:\d+)?", l)
+            if l:
+                print "found "+ l.group(1)
+                laws.append( l.group(1).upper())
+        others = sel.xpath( "./pre/text()").extract()
+#        print "others: "
+ #       print others
+  #      print "--------"
+        return laws
+    
     def parsePage( self, response):
         unicode(response.body.decode(response.encoding)).encode('utf-8')
         sel = Selector(response)
