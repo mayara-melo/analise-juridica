@@ -13,6 +13,7 @@ class StjItem(Item):
     decisao     = Field()
     citacoes    = Field()
     tribunal    = Field()
+    index       = Field()
 #    sucessivos  = Field()
 #    legislacao  = Field()
 #    observacao  = Field()
