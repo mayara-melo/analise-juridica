@@ -2,8 +2,8 @@
 
 from scrapy.selector import Selector
 from scrapy.spider import BaseSpider
-import html2text
 from stf.items import StfItem
+from stf.items import StfLawItem
 import re
 import time
 from datetime import datetime, timedelta
@@ -58,12 +58,12 @@ class STFSpider(BaseSpider):
             'Doutrina'    # p/strong/text() sec next pre
         ]
         for doc in body:
-            yield self.parseDoc( doc, possHeaders)
+            self.parseDoc( doc, possHeaders)
 
     def parseDoc( self, doc, possHeaders):
         self.fIndex += 1
         title = doc.xpath('p[1]/strong/text()').extract()
-        titleLine = re.match('\s*([\w -]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
+        titleLine = re.match('\s*([^\/]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
         acordaoId = (titleLine.group(1).replace('-',' ')).strip()
         ufShort = self.parseItem( titleLine.group(2))
         uf = self.parseItem( titleLine.group(3))
@@ -81,13 +81,14 @@ class STFSpider(BaseSpider):
         ementa      = self.parseItem( doc.xpath('strong[1]/p/text()').extract()[1])
         sectHeaders = doc.xpath('p/strong/text()').extract()[len(title)+1:-1]
         sectBody    = doc.xpath('pre/text()').extract()[1:]
-        sections  = self.orderSections(  sectHeaders, sectBody, possHeaders)
-        decision  = laws = obs = doutrines = result =''
+        sections    = self.orderSections(  sectHeaders, sectBody, possHeaders)
+        decision = laws = obs = doutrines = result =''
         quotes = tags = [] 
         partes    = self.parseItem( self.getFoundSection( 0, sections))
         decision  = self.parseItem( self.getFoundSection( 1, sections))
         tags      = self.parseItem( self.getFoundSection( 2, sections))
-        laws      = self.parseItem( self.getFoundSection( 3, sections))
+        if 3 in sections:
+            laws  = self.getLaws( sections[3])
         obs       = self.parseItem( self.getFoundSection( 4, sections))
         doutrines = self.parseItem( self.getFoundSection( 5, sections))
         if tags:
@@ -104,6 +105,7 @@ class STFSpider(BaseSpider):
             local       = uf,
 #           publicacao  = publicacao,
             dataJulg    = dataJulg,
+            orgaoJulg   = orgaoJulg,
             partes      = partes,
             relator     = relator,
             ementa      = ementa,
@@ -117,7 +119,7 @@ class STFSpider(BaseSpider):
             index       = self.fIndex
         )
         return item
-  
+    
     def urlPage( self, n):
         return (
                'http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?'+
@@ -155,6 +157,13 @@ class STFSpider(BaseSpider):
                     q = q.replace('-', ' ')
                     q = q.strip()
                     quotes.append( q) 
+                else:
+                    print "raw"
+                    print data
+                    print "-------------"
+                    print "not found"
+                    print q.encode("utf-8")
+                    print "-------------"
         return quotes
 
 #    def getResult( self, txt):
@@ -186,6 +195,46 @@ class STFSpider(BaseSpider):
         else:
             return ''
 
+    def getLaws( self, raw):    
+        laws = []
+        lines = raw.split("\n")
+        for l in lines:
+            l = l.encode("utf-8").upper()
+            lawType = self.getMatchText( l, r"\s*(?:LEG-...)\s*(\w+)[:-]?[\d+\*]?(?:\s*ANO:\d+)?.*")
+            lawNum  = self.getMatchText( l, r"\s*(?:LEG-...)\s*\w+[:-](\d+)\s*(?:\s*ANO:\d+)?.*")
+            if lawNum or lawType:
+                lawYear = self.getMatchText( l, r".*ANO[-:](\d+).*")
+                lawItem = StfLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
+                laws.append( dict(lawItem))
+#                print l.encode("utf-8")
+ #               print "Type: "+ lawType
+#              print "num: "+ lawNum
+ #               print "ano : "+ lawYear
+  #              print "---------------------------------"
+            else:
+                lawType = self.getMatchText( l, r"\s*([A-Z]+)\-\d+[\w^\- ]+")  
+                if lawType == "ART" or lawType =="PAR" or lawType == "INC":
+                    continue;
+                lawYear = self.getMatchText( l, r"\s*[A-Z]+\-(\d+)[\w^\- ]+")  
+                lawNum = ""
+                if lawType:
+                    if len(lawYear) == 2:
+                        if int(lawYear) > 15:
+                            lawYear = "19"+ lawYear
+                        else:
+                            lawYear = "20"+ lawYear
+#                    print l
+ #                   print "foundn2Type: "+ lawType
+#                    print "founnn2ano : "+ lawYear
+ #                   print "---------------------------------"
+                    lawItem = StfLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
+                    laws.append( dict(lawItem))
+                #else:
+#                    print "----------not found-----------------------"
+ #                   print l
+  #                  print "---------------------------------"
+        return laws
+ 
     def printItem( self, item):
         print '-------------------------------------------------------------'
         print 'relator:\n'+item['relator']
@@ -207,5 +256,16 @@ class STFSpider(BaseSpider):
         print item['citacoes']
         print '-------------------------------------------------------------'
  
+    def getMatchText( self, text, regexExp):
+        match = re.match( regexExp, text)
+        if  match == None:
+        #    print 'err getting '+ regexExp
+         #   print 'from: '+ text
+          #  print 'index: '+ str( self.fIndex) 
+            return ''
+        else:
+            return (match.group(1)).strip()
+
+
         
          
