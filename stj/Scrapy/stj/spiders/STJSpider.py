@@ -181,22 +181,37 @@ class STJSpider(BaseSpider):
         
     def getLaws( self, sel):    
         laws = []
+        possLaws = []
         raw = sel.xpath('./pre/a/text()').extract()
         others = ( sel.xpath('./pre/text()').extract())
         raw.extend( others)
-        for l in raw:
+        for line in raw:
+            l = line.split("\n")
+            possLaws.extend( l)
+        for l in possLaws:
             l = l.upper()
             lawType = self.getMatchText( l, r"(?:[A-Z:-]+ )?(\w+)[:-][\d\*]+(?:\s*ANO:\d+)?.*")
             lawNum  = self.getMatchText( l, r"(?:[A-Z:-]+ )?\w+[:-](\d+)(?:\s*ANO:\d+)?.*")
             lawYear = self.getMatchText( l, r".*ANO:(\d+).*")
             if lawNum or lawType:
+                if lawYear:
+                    lawYear = int(lawYear)
                 lawItem = StjLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
                 laws.append( dict(lawItem))
             else:
                 lawType = self.getMatchText( l, r"\s*[\*]+\s*([A-Z]+)[- ]+.*")  
-                lawYear = self.getMatchText( l, r"\s*[\*]+\s*[A-Z]+[- ]+(\d+).*")  
+                lawYear = self.getMatchText( l, r"\s*[\*]+\s*[A-Z]+[- ]+(\d+).*")
                 lawNum = ""
                 if lawType:
+                    if lawYear:
+                        lawYear = int(lawYear)
+                        if lawYear > 15 and lawYear < 1000:
+                            lawYear += 1900
+                        elif lawYear < 1000:
+                            lawYear += 2000
+            #        print l.encode("utf-8")
+             #       print "foundn: "+ lawType
+              #      print "founnn: "+ str(lawYear)
                     lawItem = StjLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
                     laws.append( dict(lawItem))
         return laws
