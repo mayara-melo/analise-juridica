@@ -4,6 +4,7 @@ from scrapy.spider import BaseSpider
 from scrapy.http import FormRequest, Request
 from scrapy.utils.response import open_in_browser
 from stj.items import StjItem
+from stj.items import StjLawItem
 import urlparse
 import re
 from scrapy.shell import inspect_response
@@ -63,15 +64,17 @@ class STJSpider(BaseSpider):
         )
 
     def parseDoc( self, doc):
-        relator = dataJulg = dataPublic = ementa = decisao = notas = leis =''
+        relator = dataJulg = dataPublic = ementa = decisao = notas = ''
+        leis = []
         citacoes = []
         possSection = [
             'Data do Julg',           #0
             'Data da Publ',           #1
             'Ementa',                 #2
-            'Ac',                #3
-            'Refer',                  #4
-            'Veja'                    #5
+            'Ac',                     #3
+            'Notas',                  #4
+            'Refer',                  #5
+            'Veja'                    #6
         ]
         sectionsSel =  doc.xpath('.//div[@class="paragrafoBRS"]')
         # Permanent order sections
@@ -95,9 +98,13 @@ class STJSpider(BaseSpider):
         ementa = self.extractText( sections[2], './pre/text()')
         decisao =  self.extractText( sections[3], './pre/text()')
         if 4 in sections:
-            leis = self.getLaws( sections[4])
+            notas = sections[4].xpath( './pre/text()').extract()[0]
+#            notasLink = sections[4].xpath( './pre/a/text()').extract()
+#            print notas
         if 5 in sections:
-            citacoes = self.getQuotations( sections[5])
+            leis = self.getLaws( sections[5])
+        if 6 in sections:
+            citacoes = self.getQuotations( sections[6])
         return StjItem(
                 acordaoId   = acordaoId,
                 localSigla  = localSigla,
@@ -141,9 +148,9 @@ class STJSpider(BaseSpider):
     def getMatchText( self, text, regexExp):
         match = re.match( regexExp, text)
         if  match == None:
-            print 'err getting '+ regexExp
-            print 'from: '+ text
-            print 'index: '+ str( self.fIndex) 
+        #    print 'err getting '+ regexExp
+         #   print 'from: '+ text
+          #  print 'index: '+ str( self.fIndex) 
             return ''
         else:
             return (match.group(1)).strip()
@@ -156,32 +163,42 @@ class STJSpider(BaseSpider):
         return a.upper().strip()
 
     def getQuotations( self, sel):
+        possQuotes =[]
         quotes = []
         linkedQuotes = sel.xpath('./pre/a/text()').extract()
         for l in linkedQuotes:
             quotes.append( self.getReversedId( l.upper()))
         otherQuotes = sel.xpath( "./pre/text()").extract()
-        for q in otherQuotes:
-            q = q.upper()
-            m = re.match( r"\s*(?:ST[FJ][\s-]*)?([A-Z -]+[\d]+)[-]?.*", q)
-            if m:
-                q = m.group(1).strip()
-                quotes.append( q)
+        otherQuotes.append("dummy")
+        for line in otherQuotes:
+            l = re.split(r"[\n,]", line)
+            possQuotes.extend( l)
+        for q in possQuotes:
+            m = self.getMatchText( q.upper(), r"(?:\s*ST[FJ] - )?\s*([A-Z ]+\d+\/?).*")
+            if m and not m.endswith("/"):
+                quotes.append( m)
         return quotes
         
     def getLaws( self, sel):    
         laws = []
-        linked = sel.xpath('./pre/a/text()').extract()
-        for l in linked:
-            print l
-            l = re.match( r"\s*LEG:FED ...:(\d+)(?: ANO:\d+)?", l)
-            if l:
-                print "found "+ l.group(1)
-                laws.append( l.group(1).upper())
-        others = sel.xpath( "./pre/text()").extract()
-#        print "others: "
- #       print others
-  #      print "--------"
+        raw = sel.xpath('./pre/a/text()').extract()
+        others = ( sel.xpath('./pre/text()').extract())
+        raw.extend( others)
+        for l in raw:
+            l = l.upper()
+            lawType = self.getMatchText( l, r"(?:[A-Z:-]+ )?(\w+)[:-][\d\*]+(?:\s*ANO:\d+)?.*")
+            lawNum  = self.getMatchText( l, r"(?:[A-Z:-]+ )?\w+[:-](\d+)(?:\s*ANO:\d+)?.*")
+            lawYear = self.getMatchText( l, r".*ANO:(\d+).*")
+            if lawNum or lawType:
+                lawItem = StjLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
+                laws.append( dict(lawItem))
+            else:
+                lawType = self.getMatchText( l, r"\s*[\*]+\s*([A-Z]+)[- ]+.*")  
+                lawYear = self.getMatchText( l, r"\s*[\*]+\s*[A-Z]+[- ]+(\d+).*")  
+                lawNum = ""
+                if lawType:
+                    lawItem = StjLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
+                    laws.append( dict(lawItem))
         return laws
     
     def parsePage( self, response):
