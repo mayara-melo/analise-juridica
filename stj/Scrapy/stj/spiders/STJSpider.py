@@ -64,9 +64,10 @@ class STJSpider(BaseSpider):
         )
 
     def parseDoc( self, doc):
-        relator = dataJulg = dataPublic = ementa = decisao = notas = ''
+        relator = dataJulg = dataPublic = ementa = decisao = ''
         leis = []
         citacoes = []
+        notas = []
         possSection = [
             'Data do Julg',           #0
             'Data da Publ',           #1
@@ -74,7 +75,8 @@ class STJSpider(BaseSpider):
             'Ac',                     #3
             'Notas',                  #4
             'Refer',                  #5
-            'Veja'                    #6
+            'Veja',                    #6
+            'Doutrina'                #7
         ]
         sectionsSel =  doc.xpath('.//div[@class="paragrafoBRS"]')
         # Permanent order sections
@@ -98,13 +100,20 @@ class STJSpider(BaseSpider):
         ementa = self.extractText( sections[2], './pre/text()')
         decisao =  self.extractText( sections[3], './pre/text()')
         if 4 in sections:
-            notas = sections[4].xpath( './pre/text()').extract()[0]
-#            notasLink = sections[4].xpath( './pre/a/text()').extract()
-#            print notas
+            notasNonlinked = sections[4].xpath( './pre/text()').extract()
+            notasLink = sections[4].xpath( './pre/a/text()').extract()
+            for a in notasNonlinked:
+                notas.append( a)
+                if len( notasLink):
+                    notas.append( notasLink.pop(0))
+            notas = self.parseItem("".join( notas))
         if 5 in sections:
             leis = self.getLaws( sections[5])
         if 6 in sections:
             citacoes = self.getQuotations( sections[6])
+        if 7 in sections:
+            doutrinas = self.parseItem( "".join(sections[7].xpath( "./pre/text()").extract()))
+            print doutrinas
         return StjItem(
                 acordaoId   = acordaoId,
                 localSigla  = localSigla,
@@ -116,6 +125,7 @@ class STJSpider(BaseSpider):
                 citacoes    = citacoes,
                 legislacao  = leis,
                 index       = self.fIndex,
+                notas       = notas,
                 tribunal    = 'stj'
         )
 
@@ -127,12 +137,18 @@ class STJSpider(BaseSpider):
 
     def orderSections( self, selectors, possHeader):
         sections = {}
+        ignoreSections = ["Processo", "Relator(a)", "Órgao Julgador"]
         for sec in selectors:
             header = self.parseItem( self.extractText( sec, './h4/text()'))
+            found = 0
             for i, h in enumerate( possHeader):
                 if( header.startswith( h)):
                     sections[i] = sec
+                    found=1
                     break
+        #    if not found and header not in ignoreSections:
+         #       print header
+          #      print "------------------------"
         return sections
 
     def extractText( self, selector, xpath):     
@@ -194,24 +210,22 @@ class STJSpider(BaseSpider):
             lawNum  = self.getMatchText( l, r"(?:[A-Z:-]+ )?\w+[:-](\d+)(?:\s*ANO:\d+)?.*")
             lawYear = self.getMatchText( l, r".*ANO:(\d+).*")
             if lawNum or lawType:
-                if lawYear:
-                    lawYear = int(lawYear)
                 lawItem = StjLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
                 laws.append( dict(lawItem))
             else:
                 lawType = self.getMatchText( l, r"\s*[\*]+\s*([A-Z]+)[- ]+.*")  
+#                lawName = self.getMatchText( l, r"\s*[\*]+\s*[A-Z]+[- ]+\d*([\w ]+)").lower.strip()
                 lawYear = self.getMatchText( l, r"\s*[\*]+\s*[A-Z]+[- ]+(\d+).*")
                 lawNum = ""
-                if lawType:
-                    if lawYear:
-                        lawYear = int(lawYear)
-                        if lawYear > 15 and lawYear < 1000:
-                            lawYear += 1900
-                        elif lawYear < 1000:
-                            lawYear += 2000
-            #        print l.encode("utf-8")
-             #       print "foundn: "+ lawType
-              #      print "founnn: "+ str(lawYear)
+                if lawType and lawYear:
+                    if len(lawYear) == 2:
+                        if int(lawYear) > 15:
+                            lawYear = "19" + lawYear 
+                        else:
+                            lawYear = "20" + lawYear
+#                    print l.encode("utf-8")
+ #                   print "foundn: "+ lawType
+  #                  print "founnn: "+ str(lawYear)
                     lawItem = StjLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
                     laws.append( dict(lawItem))
         return laws
