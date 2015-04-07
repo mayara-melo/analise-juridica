@@ -13,9 +13,14 @@ class StjItem(Item):
     decisao     = Field()
     citacoes    = Field()
     tribunal    = Field()
+    notas       = Field()
     index       = Field()
 #    sucessivos  = Field()
-#    legislacao  = Field()
+    legislacao  = Field()
 #    observacao  = Field()
-#    acordaos    = Field()
 #    tudo        = Field()
+
+class StjLawItem(Item):
+    tipo   = Field()
+    ano    = Field()
+    numero = Field()

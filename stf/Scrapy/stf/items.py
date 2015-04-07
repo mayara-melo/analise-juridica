@@ -19,6 +19,12 @@ class StfItem(Item):
     tags        = Field()
     partes      = Field()
     tribunal    = Field()
+    orgaoJulg   = Field()
     index       = Field()
 #    acordaos    = Field()
 #    tudo        = Field()
+
+class StfLawItem(Item):
+    tipo   = Field()
+    ano    = Field()
+    numero = Field()
