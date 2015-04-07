@@ -84,7 +84,7 @@ class STJSpider(BaseSpider):
         acordaoId  = self.getReversedId( self.getMatchText( processo, r"\s*([^\/]*).*"))
         localSigla = self.getMatchText( processo, r"[^\/]*\/\s*(..).*")
         relator    = self.extractText( sectionsSel[1], './pre/text()')
-        relator    = self.getMatchText( relator, r"M[A-Za-z\)\(:.]*\W*([^\(]*).*")
+        relator    = self.getMatchText( relator, r"M[A-Za-z\)\(:.]*\W*([^\(]*).*").title()
  
         # Facultative/unordered sections
         sections = self.orderSections( sectionsSel, possSection)
