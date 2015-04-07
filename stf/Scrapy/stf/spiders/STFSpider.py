@@ -58,13 +58,13 @@ class STFSpider(BaseSpider):
             'Doutrina'    # p/strong/text() sec next pre
         ]
         for doc in body:
-            self.parseDoc( doc, possHeaders)
+            yield self.parseDoc( doc, possHeaders)
 
     def parseDoc( self, doc, possHeaders):
         self.fIndex += 1
         title = doc.xpath('p[1]/strong/text()').extract()
         titleLine = re.match('\s*([^\/]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
-        acordaoId = (titleLine.group(1).replace('-',' ')).strip()
+        acordaoId = (titleLine.group(1).replace('-',' ')).upper().strip()
         ufShort = self.parseItem( titleLine.group(2))
         uf = self.parseItem( titleLine.group(3))
         relator = self.parseItem( re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1))
