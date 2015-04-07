@@ -100,20 +100,19 @@ class STJSpider(BaseSpider):
         ementa = self.extractText( sections[2], './pre/text()')
         decisao =  self.extractText( sections[3], './pre/text()')
         if 4 in sections:
-            notasNonlinked = sections[4].xpath( './pre/text()').extract()
-            notasLink = sections[4].xpath( './pre/a/text()').extract()
-            for a in notasNonlinked:
-                notas.append( a)
-                if len( notasLink):
-                    notas.append( notasLink.pop(0))
+            notas = sections[4].xpath( 'pre//text()').extract()
             notas = self.parseItem("".join( notas))
+           # print "notas\n"+ notas+"--------------"
         if 5 in sections:
-            leis = self.getLaws( sections[5])
+            #leis = self.getLaws( sections[5])
+            leis = sections[5].xpath("pre//text()").extract()
+            leis = "".join( leis)
+           # print "leis\n"+ leis+"--------------"
         if 6 in sections:
             citacoes = self.getQuotations( sections[6])
         if 7 in sections:
             doutrinas = self.parseItem( "".join(sections[7].xpath( "./pre/text()").extract()))
-            print doutrinas
+#            print doutrinas
         return StjItem(
                 acordaoId   = acordaoId,
                 localSigla  = localSigla,
@@ -206,11 +205,12 @@ class STJSpider(BaseSpider):
             possLaws.extend( l)
         for l in possLaws:
             l = l.upper()
-            lawType = self.getMatchText( l, r"(?:[A-Z:-]+ )?(\w+)[:-][\d\*]+(?:\s*ANO:\d+)?.*")
-            lawNum  = self.getMatchText( l, r"(?:[A-Z:-]+ )?\w+[:-](\d+)(?:\s*ANO:\d+)?.*")
-            lawYear = self.getMatchText( l, r".*ANO:(\d+).*")
+            lawScope = self.getMatchText( l, r"(?:LEG-)([A-Z]+).*")
+            lawType  = self.getMatchText( l, r"(?:[A-Z:-]+ )?(\w+)[:-][\d\*]+(?:\s*ANO:\d+)?.*")
+            lawNum   = self.getMatchText( l, r"(?:[A-Z:-]+ )?\w+[:-](\d+)(?:\s*ANO:\d+)?.*")
+            lawYear  = self.getMatchText( l, r".*ANO:(\d+).*")
             if lawNum or lawType:
-                lawItem = StjLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
+                lawItem = StjLawItem( tipo = lawType, numero = lawNum, ano = lawYear )
                 laws.append( dict(lawItem))
             else:
                 lawType = self.getMatchText( l, r"\s*[\*]+\s*([A-Z]+)[- ]+.*")  
@@ -245,7 +245,7 @@ class STJSpider(BaseSpider):
             '/div[@id="listadocumentos"]'+
             '/div[@style="position: relative;"]')
         for doc in doclist:
-            yield self.parseDoc( doc)
+            self.parseDoc( doc)
             self.fIndex = self.fIndex + 1
         nextPage = sel.xpath('//*[@id="navegacao"]/a/img[@src="/recursos/imagens/tocn.gif"]')
         if nextPage:
