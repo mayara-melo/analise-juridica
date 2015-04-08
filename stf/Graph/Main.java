@@ -51,17 +51,17 @@ public class Main {
             printProgress();
 
             DBObject acordao = cursorSTF.next();
-            String acordaoId = (String)acordao.get("acordaoId"); 
-            String newId = acordaoId.toUpperCase();
+//            String acordaoId = (String)acordao.get("acordaoId"); 
+ //           String newId = acordaoId.toUpperCase();
             //BasicDBObject  = new BasicDBObject( "$regex", "/.*"  ".*/i");
                       
-            BasicDBObject newDocument = new BasicDBObject();
+/*            BasicDBObject newDocument = new BasicDBObject();
             newDocument.append("$set", new BasicDBObject("acordaoId", newId));
-            BasicDBObject q = new BasicDBObject("acordaoId", acordaoId);
+            BasicDBObject q = new BasicDBObject("acordaoId", acordaoId);*/
             //System.out.println( "index: "+acordao.get("index"));
-	        //processAcordao( acordaosSTF, links, acordao);
-            STFCopy.insert( acordao);
-            acordaosSTF.update( q, newDocument);
+	        processAcordao( acordaosSTF, links, acordao);
+            /*STFCopy.insert( acordao);
+            acordaosSTF.update( q, newDocument);*/
         }
 
        /* cursor = acordaos.find(new BasicDBObject("index", new BasicDBObject("$gt", 25000)).append("ranked", false));
@@ -110,13 +110,13 @@ public class Main {
 
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
             link.append("acordaoId", acordao.get("acordaoId"));
-            link.append("localSigla", acordao.get("localSigla"));
+/*            link.append("localSigla", acordao.get("localSigla"));
             link.append("local", acordao.get("local"));
             link.append("relator", acordao.get("relator"));
             link.append("data", acordao.get("dataJulg"));
             link.append("quotesSomething", acordao.get("quotesSomething"));
             link.append("tribunal", acordao.get("tribunal"));
-            link.append("citacoes", foundQuotes);
+            link.append("citacoes", foundQuotes);*/
             links.insert(link);
 
     }
