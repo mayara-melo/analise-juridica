@@ -13,22 +13,23 @@ from scrapy.contrib.exporter import XmlItemExporter
 class MongoDBPipeline(object):
 
     def __init__(self):
-        connection = pymongo.Connection(
-            'localhost',
-            27017
-        )
-        db = connection['test']
-        self.collection = db['stj']
+        a = 1
+#        connection = pymongo.Connection(
+ #           'localhost',
+  #          27017
+   #     )
+    #    db = connection['test']
+     #   self.collection = db['stj']
 
     def process_item(self, item, spider):
         valid = True
-        print 'processing item'
+#        print 'processing item'
         for data in item:
             if not data:
                 valid = False
                 raise DropItem("Missing {0}!".format(data))
         if valid:
-            self.collection.insert(dict(item))
+      #      self.collection.insert(dict(item))
             log.msg("item added!",
                     level=log.DEBUG, spider=spider)
         return item
