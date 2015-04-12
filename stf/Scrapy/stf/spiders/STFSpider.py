@@ -148,26 +148,25 @@ class STFSpider(BaseSpider):
 
     def getAcordaosQuotes( self, txt):
         quotes = []
-        print "text"
-        print txt
-        print "----------------"
         data = re.search(("Acórdão(?:\(?s\)?)? citado(?:\(?s\)?)?\s*:\s*([^:]*)(?=\.[^:])").decode("utf-8"), txt)
         if data:
             data = (data.group(1))
             data = re.split('[;,.()]', data)
             for q in data:
-                if re.search(r'\d+', q):
+                q = re.match("[\s-]*([a-zA-Z]{2,}[ -]\d+[ -][a-zA-Z\- \d]*)\s*", q)
+		if q:
+		    q = q.group(1)
                     q = q.replace('-', ' ')
                     q = q.strip().upper()
                     quotes.append( q) 
-           #         print "found q: "+ q
-            #    else:
-             #       print "raw"
-              #      print data
-               #     print "-------------"
-                #    print "not found"
-                 #   print q.encode("utf-8")
-                  #  print "-------------"
+#                    print "found q: "+ q
+#                else:
+#                    print "raw"
+#                    print data
+#                    print "-------------"
+#                    print "not found"
+#                    print q 
+#                    print "-------------"
         return quotes
 
 #    def getResult( self, txt):

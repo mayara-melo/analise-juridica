@@ -245,7 +245,7 @@ class STJSpider(BaseSpider):
             '/div[@id="listadocumentos"]'+
             '/div[@style="position: relative;"]')
         for doc in doclist:
-            self.parseDoc( doc)
+            yield self.parseDoc( doc)
             self.fIndex = self.fIndex + 1
         nextPage = sel.xpath('//*[@id="navegacao"]/a/img[@src="/recursos/imagens/tocn.gif"]')
         if nextPage:

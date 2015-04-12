@@ -13,15 +13,12 @@ public class Main {
     public static void main(String[] args) throws UnknownHostException {
 
         MongoClient mongoClient = new MongoClient();
-        DB db = mongoClient.getDB( "test" );
+        DB db = mongoClient.getDB( "DJs" );
 
-        DBCollection acordaosSTF = db.getCollection("stf");
         DBCollection acordaosSTJ = db.getCollection("stj");
 
 //        total = acordaosSTF.count();
         total = acordaosSTJ.count();
-
-        DBCursor cursorSTF = acordaosSTF.find();
         DBCursor cursorSTJ = acordaosSTJ.find();
 
         DBCollection links = db.getCollection("linksSTJ");
@@ -94,11 +91,15 @@ public class Main {
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
             link.append("acordaoId", acordao.get("acordaoId"));
             link.append("localSigla", acordao.get("localSigla"));
-            link.append("local", acordao.get("local"));
+            link.append("ementa", acordao.get("ementa"));
+            link.append("decisao", acordao.get("decisao"));
+            link.append("legislacao", acordao.get("legislacao"));
             link.append("relator", acordao.get("relator"));
             link.append("data", acordao.get("dataJulg"));
-            link.append("quotesSomething", acordao.get("quotesSomething"));
             link.append("tribunal", acordao.get("tribunal"));
+            link.append("index", acordao.get("index"));
+            link.append("notas", acordao.get("notas"));
+            link.append("dataPublic, acordao.get("dataPublic"));
             link.append("citacoes", foundQuotes);
             links.insert(link);
 

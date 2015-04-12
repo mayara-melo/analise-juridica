@@ -19,13 +19,13 @@ class MongoDBPipeline( object):
             'localhost',
             27017
         )
-        db = connection['demo']
-        self.collection = db['all']
+        db = connection['DJs']
+        self.collection = db['stf']
         self.corpus = None
 
     def process_item( self, item, spider):
         valid = True
-        print 'processing item'
+#        print 'processing item'
         for data in item:
             if not data:
                 valid = False

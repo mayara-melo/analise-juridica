@@ -18,8 +18,8 @@ public class Main {
         MongoClient mongoClient = new MongoClient();
         DB db = mongoClient.getDB( "DJs" );
 
+//        DBCollection acordaosSTF = db.getCollection("stf");
         DBCollection acordaosSTF = db.getCollection("stf");
-        DBCollection STFCopy = db.getCollection("stfCopy");
 
   //      BasicDBObject reg = new BasicDBObject( "$regex", "/^" + control + ".*$/i");
 //        BasicDBObject reg = new BasicDBObject( "$regex", "/^.*$/i");
@@ -55,12 +55,12 @@ public class Main {
  //           String newId = acordaoId.toUpperCase();
             //BasicDBObject  = new BasicDBObject( "$regex", "/.*"  ".*/i");
                       
-/*            BasicDBObject newDocument = new BasicDBObject();
-            newDocument.append("$set", new BasicDBObject("acordaoId", newId));
-            BasicDBObject q = new BasicDBObject("acordaoId", acordaoId);*/
+         //   BasicDBObject newDocument = new BasicDBObject();
+       //     newDocument.append("$set", new BasicDBObject("acordaoId", newId));
+           // BasicDBObject acordao = new BasicDBObject("acordaoId", acordaoId);
             //System.out.println( "index: "+acordao.get("index"));
-	        processAcordao( acordaosSTF, links, acordao);
-            /*STFCopy.insert( acordao);
+	    processAcordao( acordaosSTF, links, acordao);
+            /*STFCopy.insert( acordao);w
             acordaosSTF.update( q, newDocument);*/
         }
 
@@ -99,24 +99,21 @@ public class Main {
 
     private static void processAcordao( DBCollection acordaos, DBCollection links, DBObject acordao) {
             ArrayList<BasicDBObject> foundQuotes = new ArrayList<BasicDBObject>();
-            Object a = acordao.get("citacoes");
+          //  Object a = acordao.get("citacoes");
             BasicDBList quotes = (BasicDBList) acordao.get("citacoes");
             for( Object quote : quotes) {
 //                BasicDBObject reg = new BasicDBObject( "$regex", "/.*" + (String)quote + ".*/i");
                 BasicDBObject query = new BasicDBObject("acordaoId", (String)quote);
-                BasicDBObject foundQ = (BasicDBObject)acordaos.findOne(query);
-                if( foundQ != null) foundQuotes.add( foundQ);
+//            	System.out.println( "quoted id: "+(String)quote);
+		BasicDBObject foundQ = (BasicDBObject)acordaos.findOne(query);
+//                if( foundQ != null) {
+//	            reduced qnew BasicDBObject("acordaoId",foundQ.get("acordaoId")));
+                if( foundQ != null) foundQuotes.add( new BasicDBObject("acordaoId",foundQ.get("acordaoId")));
             }
 
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
             link.append("acordaoId", acordao.get("acordaoId"));
-/*            link.append("localSigla", acordao.get("localSigla"));
-            link.append("local", acordao.get("local"));
-            link.append("relator", acordao.get("relator"));
-            link.append("data", acordao.get("dataJulg"));
-            link.append("quotesSomething", acordao.get("quotesSomething"));
-            link.append("tribunal", acordao.get("tribunal"));
-            link.append("citacoes", foundQuotes);*/
+            link.append("citacoes", foundQuotes);
             links.insert(link);
 
     }
