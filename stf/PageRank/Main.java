@@ -1,28 +1,37 @@
 import com.mongodb.*;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
 
     private static HashMap<String, Acordao> acordaos = new HashMap<String, Acordao>();
-//    private static List<String> names = new LinkedList(Arrays.asList("ADI","RE", "HC","Agr","AI","Ext"));
+    private static LinkedList<String> docTypesList = new LinkedList(Arrays.asList(
+		"AI","RE","HC","ARE","ADI","RCL","RHC","MS","AC","RMS","INQ","EXT","PET","SS","AO","AR",
+		"ACO","MI","AP","STA","IF","CC","ADPF","SEC","SL","CR","ADC","PSV","AS","HD", "AOE","PPE","RC","SE"));
+
     public static void main(String[] args) throws UnknownHostException {
         MongoClient mongoClient = new MongoClient();
         DB db = mongoClient.getDB( "DJs" );
         DBCollection links = db.getCollection("linksSTF");
-        buildMap( links);
-        calculatePageRanks( db.getCollection("pageRankedNcitationsSTF"));
+
+	Iterator<String> iterator = docTypesList.iterator();
+	while (iterator.hasNext()) {
+	    acordaos = new HashMap<String,Acordao>();
+	    String type = iterator.next();
+	    BasicDBObject query = new BasicDBObject("acordaoId",new BasicDBObject("$regex", "^"+type+" .*")); 
+	    System.out.println(query);
+            buildMap( links.find(query));
+	    DBCollection pageRank = db.getCollection("pgRk1STF"+type);
+	    pageRank.drop();
+            calculatePageRanksNcitations( pageRank);
+	}
+
     }
 
-    private static void buildMap( DBCollection links) throws UnknownHostException {
-        Long numAcordaos = links.count();
+    private static void buildMap( DBCursor cursor) throws UnknownHostException {
+        Long numAcordaos = new Long( cursor.count());
         Double n = numAcordaos.doubleValue();
 
-        DBCursor cursor = links.find();
         while(cursor.hasNext()) {
             DBObject acordaoObject = cursor.next();
             try {
@@ -33,7 +42,6 @@ public class Main {
                 Acordao acordao = new Acordao( id, quotesIDs, numAcordaos);
                 acordaos.put(id, acordao);
 
-
             } catch(NullPointerException ex) {
                 System.out.println("NULL POINTER EXCEPTION, BITCH");
                 ex.printStackTrace();
@@ -42,9 +50,15 @@ public class Main {
         for (Acordao acordao : acordaos.values()) {
             ArrayList<String> quotes = acordao.getQuotes();
             for (String q : quotes) {
+//	    	System.out.println("quotes: "+ q);
                 Acordao quotedAcordao = acordaos.get( q);
-                acordao.quotes.add( quotedAcordao);
-                quotedAcordao.isQuotedBy.add( acordao);
+		if(quotedAcordao !=null){
+                    acordao.quotes.add( quotedAcordao);
+                    quotedAcordao.isQuotedBy.add( acordao);
+		}
+		else{
+		    acordao.quotes.remove(quotedAcordao);
+		}
             }
         }
 
@@ -75,7 +89,7 @@ public class Main {
 
 
 
-    private static void calculatePageRanks( DBCollection pageRanked) throws UnknownHostException {
+    private static void calculatePageRanksNcitations( DBCollection pageRanked) throws UnknownHostException {
 
 	Double epsilon = 1.0E-18;
 	Double d = 0.85;
