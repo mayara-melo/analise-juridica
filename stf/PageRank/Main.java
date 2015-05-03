@@ -18,10 +18,10 @@ public class Main {
 	while (iterator.hasNext()) {
 	    acordaos = new HashMap<String,Acordao>();
 	    String type = iterator.next();
-	    BasicDBObject query = new BasicDBObject("acordaoId",new BasicDBObject("$regex", "^"+type+" .*")); 
+	    BasicDBObject query = new BasicDBObject("acordaoId",new BasicDBObject("$regex", "^"+type+" ")); 
 	    System.out.println(query);
-            buildMap( links.find(query));
-	    DBCollection pageRank = db.getCollection("pgRk1STF"+type);
+            buildMap( links.find( query));
+	    DBCollection pageRank = db.getCollection("stfpg1"+type);
 	    pageRank.drop();
             calculatePageRanksNcitations( pageRank);
 	}
