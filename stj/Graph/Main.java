@@ -17,50 +17,24 @@ public class Main {
 
         DBCollection acordaosSTJ = db.getCollection("stj");
 
-//        total = acordaosSTF.count();
         total = acordaosSTJ.count();
-        DBCursor cursorSTJ = acordaosSTJ.find();
 
         DBCollection links = db.getCollection("linksSTJ");
         links.drop();
  
-/*        BasicDBObject queryNotRanked = new BasicDBObject("linked", false);
-        cursorSTF = acordaosSTF.find( queryNotRanked);
-        cursorSTF.sort(new BasicDBObject("index", -1));
-        Integer minIndex = (int) (acordaos.findOne( queryNotRanked).get("index"));
-        
-        cursorSTF = acordaosSTF.find(new BasicDBObject("index", new BasicDBObject("$gte", minIndex)));
-        total = new Long(cursorSTF.count());
-        
-        acordaosSTF.update( new BasicDBObject( "linked", false),
-                         new BasicDBObject( "$unset", new BasicDBObject("linked", "")),
-                         false, true);
-  */      //System.out.println("\n");
-        while( cursorSTJ.hasNext()) {
-            printProgress();
-
-            DBObject acordao = cursorSTJ.next();
-            
-            //System.out.println( "index: "+acordao.get("index"));
+	for( int i = 1; i <= 290000; i += 2500){ 
+	    BasicDBObject query = new BasicDBObject();
+	    query.put("index", new BasicDBObject("$gte", i));
+	    query.put("index", new BasicDBObject("$lt", i+10000));
+            DBCursor cursorSTJ = acordaosSTJ.find(query);
+            while( cursorSTJ.hasNext()) {
+                printProgress();
+                DBObject acordao = cursorSTJ.next();
+                System.out.println( "index: "+acordao.get("index"));
 	        processAcordao( acordaosSTJ, links, acordao);
-
+	    }
         }
-
-       /* cursor = acordaos.find(new BasicDBObject("index", new BasicDBObject("$gt", 25000)).append("ranked", false));
         System.out.println("\n");
-        while(cursor.hasNext()) {
-
-            printProgress();
-
-            DBObject acordao = cursor.next();
-
-            processFile(tree, acordaos, links, acordao);
-
-        }
-*/
-        System.out.println("\n");
-
-
     }
 
     private static void printProgress() {
@@ -80,12 +54,12 @@ public class Main {
 
 
     private static void processAcordao( DBCollection acordaos, DBCollection links, DBObject acordao) {
-            ArrayList<BasicDBObject> foundQuotes = new ArrayList<BasicDBObject>();
+            ArrayList<String> foundQuotes = new ArrayList<String>();
             BasicDBList quotes = (BasicDBList) acordao.get("citacoes");
             for( Object quote : quotes) {
                 BasicDBObject query = new BasicDBObject("acordaoId", (String)quote);
                 BasicDBObject foundQ = (BasicDBObject)acordaos.findOne(query);
-                if( foundQ != null) foundQuotes.add( foundQ);
+                if( foundQ != null) foundQuotes.add( (String)quote);
             }
 
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
@@ -99,7 +73,7 @@ public class Main {
             link.append("tribunal", acordao.get("tribunal"));
             link.append("index", acordao.get("index"));
             link.append("notas", acordao.get("notas"));
-            link.append("dataPublic, acordao.get("dataPublic"));
+            link.append("dataPublic", acordao.get("dataPublic"));
             link.append("citacoes", foundQuotes);
             links.insert(link);
 
