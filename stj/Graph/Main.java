@@ -20,13 +20,15 @@ public class Main {
         total = acordaosSTJ.count();
 
         DBCollection links = db.getCollection("linksSTJ");
-        links.drop();
+	links.drop();
  
-	for( int i = 1; i <= 290000; i += 2500){ 
-	    BasicDBObject query = new BasicDBObject();
-	    query.put("index", new BasicDBObject("$gte", i));
-	    query.put("index", new BasicDBObject("$lt", i+10000));
-            DBCursor cursorSTJ = acordaosSTJ.find(query);
+	for( int i = 1; i <= 290000; i += 5000){ 
+	    BasicDBObject query = new BasicDBObject(2);
+	    query.put("$gte", i);
+	    query.put("$lt", i+5000);
+            DBCursor cursorSTJ = acordaosSTJ.find( new BasicDBObject("index",query));
+	    cursorSTJ.addOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
+	    System.out.println( cursorSTJ);
             while( cursorSTJ.hasNext()) {
                 printProgress();
                 DBObject acordao = cursorSTJ.next();
@@ -72,8 +74,7 @@ public class Main {
             link.append("data", acordao.get("dataJulg"));
             link.append("tribunal", acordao.get("tribunal"));
             link.append("index", acordao.get("index"));
-            link.append("notas", acordao.get("notas"));
-            link.append("dataPublic", acordao.get("dataPublic"));
+            link.append("dataJulg", acordao.get("dataPublic"));
             link.append("citacoes", foundQuotes);
             links.insert(link);
 

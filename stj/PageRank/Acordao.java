@@ -35,6 +35,10 @@ public class Acordao {
         return this.tribunal;
     }
 
+    public String getRelator() {
+        return this.tribunal;
+    }
+
     public String toString() {
         String ret = "[ " + id + "\t(" + tribunal + ")\n\tquotes: [";
         for (Acordao quotedAcordao : quotes) {
