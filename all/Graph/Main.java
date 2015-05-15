@@ -9,30 +9,30 @@ public class Main {
     private static Integer count = 0;
     private static Long total;
 
-
     public static void main(String[] args) throws UnknownHostException {
+	String inDB = args[0];
+	String inCollection = args[1];
+	String outCollection = args[2];
 
         MongoClient mongoClient = new MongoClient();
-        DB db = mongoClient.getDB( "DJs" );
+        DB db = mongoClient.getDB( inDB );
 
-        DBCollection acordaosSTJ = db.getCollection("stj");
-        DBCollection acordaosSTF = db.getCollection("stf");
-        DBCollection links       = db.getCollection("linksAll");
-        DBCollection acordaosAll = db.getCollection("acordaosAll");
+        DBCollection links    = db.getCollection( outCollection);
+        DBCollection acordaos = db.getCollection( inCollection);
 	links.drop();
 
-        total = acordaosSTJ.count() + acordaosSTF.count();
+        total = acordaos.count();
  
-	for( int i = 1; i <= 290000; i += 10000){ 
+	for( int i = 1, step = 10000; i <= 290000; i += step){ 
 	    BasicDBObject query = new BasicDBObject(2);
 	    query.put("$gte", i);
-	    query.put("$lt", i+10000);
-            DBCursor cursorAll = acordaosAll.find( new BasicDBObject("index",query));
-	    cursorAll.addOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
-            while( cursorAll.hasNext()) {
-                printProgress();
-                DBObject acordao = cursorAll.next();
-	        processAcordao( acordaosAll, links, acordao);
+	    query.put("$lt", i+step);
+            DBCursor cursor = acordaos.find( new BasicDBObject("index",query));
+	    cursor.addOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
+            while( cursor.hasNext()) {
+		printProgress();
+                DBObject acordao = cursor.next();
+	        processAcordao( acordaos, links, acordao);
 	    }
         }
         System.out.println("\n");
