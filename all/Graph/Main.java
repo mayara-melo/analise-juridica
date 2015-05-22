@@ -10,15 +10,15 @@ public class Main {
     private static Long total;
 
     public static void main(String[] args) throws UnknownHostException {
-	String inDB = args[0];
-	String inCollection = args[1];
-	String outCollection = args[2];
-
+	String DBName = args[0];
+	String acordaosCollectionName = args[1];
+	String linksCollectionName = "links" + acordaosCollectionName.toUpperCase(); 
         MongoClient mongoClient = new MongoClient();
-        DB db = mongoClient.getDB( inDB );
+        DB db = mongoClient.getDB( DBName );
 
-        DBCollection links    = db.getCollection( outCollection);
-        DBCollection acordaos = db.getCollection( inCollection);
+        DBCollection links    = db.getCollection( linksCollectionName);
+        DBCollection acordaos = db.getCollection( acordaosCollectionName);
+
 	links.drop();
 
         total = acordaos.count();
