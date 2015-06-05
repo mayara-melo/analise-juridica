@@ -55,6 +55,7 @@ class STFSpider(BaseSpider):
             'Indexa',   # p/strong/text() sec next pre
             'Legisla',  # p/strong/text() sec next pre
             'Observa',  # p/strong/text() sec next pre
+	    'Acórdãos no mesmo'.decode("utf-8"),
             'Doutrina'    # p/strong/text() sec next pre
         ]
         for doc in body:
@@ -63,11 +64,15 @@ class STFSpider(BaseSpider):
     def parseDoc( self, doc, possHeaders):
         self.fIndex += 1
         title = doc.xpath('p[1]/strong/text()').extract()
-        titleLine = re.match('\s*([^\/]+)\/\s*(\w*)\s*-\s*(.*).*', title[0])
-        acordaoId = (titleLine.group(1).replace('-',' ')).upper().strip()
-        ufShort = self.parseItem( titleLine.group(2))
-        uf = self.parseItem( titleLine.group(3))
-        relator = self.parseItem( re.match('\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)', title[7] ).group(1))
+        acordaoId = self.getMatchText( title[0], '\s*([^\/]+).*')
+	acordaoId = acordaoId.replace('-',' ').upper().strip()
+#        titleLine = re.match('\s*([^\/]+)\/\s*(\w*)\s*-\s*(.*)', title[0])
+        ufShort = self.getMatchText( title[0], '.*/\s*(\w*).*').upper().strip()
+        uf = self.parseItem( self.getMatchText( title[0], '.*\/.*-\s*(.*)')).upper().strip()
+  #      acordaoId = (titleLine.group(1).replace('-',' ')).upper().strip()
+  #      ufShort = self.parseItem( titleLine.group(2))
+ #       uf = self.parseItem( titleLine.group(3))
+        relator = self.parseItem( self.getMatchText( title[7], '\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)')).upper().strip()
         dataJulg = orgaoJulg =''
         for line in title[1:]:
             line = line.replace('&nbsp', '')
@@ -87,10 +92,13 @@ class STFSpider(BaseSpider):
         partes    = self.parseItem( self.getFoundSection( 0, sections))
         decision  = self.parseItem( self.getFoundSection( 1, sections))
         tags      = self.parseItem( self.getFoundSection( 2, sections))
-        if 3 in sections:
-            laws  = self.getLaws( sections[3])
+        laws      = self.getLaws( self.getFoundSection( 3, sections))
         obs       = self.parseItem( self.getFoundSection( 4, sections))
-        doutrines = self.parseItem( self.getFoundSection( 5, sections))
+	similarAcordaos = self.getSimilarAcordaos( self.getFoundSection( 5, sections))
+	#if similarAcordaos:
+	 #   print("similar acordaos: ")
+	 #   print( similarAcordaos)
+        doutrines = self.parseItem( self.getFoundSection( 6, sections))
         if tags:
             tags = re.split(r'[\n,\-.]+', tags)
             for j in range( len(tags)):
@@ -98,7 +106,6 @@ class STFSpider(BaseSpider):
             tags = filter(None, tags)
         if obs:
             quotes = self.getAcordaosQuotes( obs)
-
         item = StfItem(
             acordaoId   = acordaoId,
             localSigla  = ufShort,
@@ -115,6 +122,7 @@ class STFSpider(BaseSpider):
             doutrinas   = doutrines,
             observacao  = obs, 
             tags        = tags, 
+	    acordaosSimilares = similarAcordaos,
             tribunal    = "stf",
             index       = self.fIndex
         )
@@ -198,6 +206,55 @@ class STFSpider(BaseSpider):
         else:
             return ''
 
+    def getSimilarAcordaos( self, raw):
+	similar = []
+	lines = raw.split("\n")
+	if len(lines) <= 1:
+	    return []
+	for i in xrange(0,len(lines)):
+	    if not lines[i].startswith(" "):
+	        similarAcordaoId = lines[i].replace(' PROCESSO ELETRÔNICO'.decode("utf8"),"").strip()
+	        similarAcordaoId = similarAcordaoId.replace(' ACÓRDÃO ELETRÔNICO'.decode("utf8"),"").strip()
+	        similarAcordaoId = similarAcordaoId.replace('-'," ").strip()
+                match = re.match( r"\s*(?:JULG|ANO)-([\d\-]+)\s+UF-(\w\w)\s+TURMA-([\w\d]+)\s+MIN-([\w\s]+).*", lines[i+1]) 
+		if not match:
+		    print( lines[i:i+2])
+		    continue
+		dataJulg = (match.group(1)).split("-")
+#		if len(dataJulg) > 1:
+#		    dataJulg = datetime( dataJulg[2], dataJulg[1], dataJulg[0])
+#		print(dataJulg)
+#		ufShort = match.group(2)
+#		print(ufShort)
+#		orgaoJulg = match.group(3)
+#		print(orgaoJulg)
+#		relator = self.parseItem( match.group(4)).title()
+#		print(relator)
+	        similar.append( similarAcordaoId) 
+	return( similar)
+##		yield( 
+#                item = StfItem(
+#                        acordaoId   = similarAcordaoId,
+#                        localSigla  = ufShort,
+#                        local       = "",
+#                        dataJulg    = dataJulg,
+#                        orgaoJulg   = "",
+#                        partes      = "",
+#                        relator     = relator,
+#                        ementa      = "",
+#                        decisao     = "",
+#                        citacoes    = [],
+#                        legislacao  = [],
+#                        doutrinas   = "",
+#                        observacao  = "", 
+#                        tags        = [], 
+#                        tribunal    = "stf",
+#			virtual     = "sim",
+#                        index       = self.fIndex
+#	            )
+##		)
+#	        self.fIndex+=1
+
     def getLaws( self, raw):    
         laws = []
         lines = raw.split("\n")
@@ -268,6 +325,7 @@ class STFSpider(BaseSpider):
             return ''
         else:
             return (match.group(1)).strip()
+
 
 
         

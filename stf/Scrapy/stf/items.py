@@ -12,7 +12,7 @@ class StfItem(Item):
     ementa      = Field()
     decisao     = Field()
     citacoes    = Field()
-#    sucessivos  = Field()
+    acordaosSimilares  = Field()
     legislacao  = Field()
     observacao  = Field()
     doutrinas   = Field()

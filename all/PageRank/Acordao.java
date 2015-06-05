@@ -36,7 +36,7 @@ public class Acordao {
     }
 
     public String getRelator() {
-        return this.tribunal;
+        return this.relator;
     }
 
     public String toString() {

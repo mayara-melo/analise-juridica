@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from scrapy.selector import Selector
 from scrapy.spider import BaseSpider
-import html2text
 import re
 from stf.items import StfItem
 

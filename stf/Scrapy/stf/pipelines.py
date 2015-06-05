@@ -32,9 +32,9 @@ class MongoDBPipeline( object):
                 raise DropItem("Missing {0}!".format(data))
         if valid:
             self.collection.insert(dict(item))
-            log.msg("Question added to MongoDB database!",
+            log.msg("acordao added to MongoDB database!",
                     level=log.DEBUG, spider=spider)
-            self.addItemToCorpus( item, self.corpus)
+#            self.addItemToCorpus( item, self.corpus)
         return item
 
     def open_spider( self, spider):
