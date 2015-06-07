@@ -103,7 +103,7 @@ class STFSpider(BaseSpider):
             acordaoId   = acordaoId,
             localSigla  = ufShort,
             local       = uf,
-            publicacao  = publicacao,
+            #publicacao  = publicacao,
             dataJulg    = dataJulg,
             orgaoJulg   = orgaoJulg,
             partes      = partes,
@@ -193,8 +193,8 @@ class STFSpider(BaseSpider):
                 dataJulg = dataJulg.split("-")
                 if len(dataJulg) > 1:
                     dataJulg = datetime( int(dataJulg[2]), int(dataJulg[1]), int(dataJulg[0]))
-            similarAcordao = StfItem( acordaoId = similarAcordaoId, localSigla = ufShort, dataJulg = dataJulg)
-            similar.append( similarAcordao) 
+            similarAcordao = {"acordaoId": similarAcordaoId, "localSigla": ufShort, "dataJulg":dataJulg, "relator":relator, "orgaoJulg":orgaoJulg}
+            similar.append(dict(similarAcordao))
         return( similar)
 
     def getLaws( self, raw):    
