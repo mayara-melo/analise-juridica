@@ -65,13 +65,9 @@ class STFSpider(BaseSpider):
         self.fIndex += 1
         title = doc.xpath('p[1]/strong/text()').extract()
         acordaoId = self.getMatchText( title[0], '\s*([^\/]+).*')
-	acordaoId = acordaoId.replace('-',' ').upper().strip()
-#        titleLine = re.match('\s*([^\/]+)\/\s*(\w*)\s*-\s*(.*)', title[0])
+        acordaoId = acordaoId.replace('-',' ').upper().strip()
         ufShort = self.getMatchText( title[0], '.*/\s*(\w*).*').upper().strip()
         uf = self.parseItem( self.getMatchText( title[0], '.*\/.*-\s*(.*)')).upper().strip()
-  #      acordaoId = (titleLine.group(1).replace('-',' ')).upper().strip()
-  #      ufShort = self.parseItem( titleLine.group(2))
- #       uf = self.parseItem( titleLine.group(3))
         relator = self.parseItem( self.getMatchText( title[7], '\s*Relator\(a\):.+[Mm][Ii][Nn].\s*(.+)')).upper().strip()
         dataJulg = orgaoJulg =''
         for line in title[1:]:
@@ -88,16 +84,13 @@ class STFSpider(BaseSpider):
         sectBody    = doc.xpath('pre/text()').extract()[1:]
         sections    = self.orderSections(  sectHeaders, sectBody, possHeaders)
         decision = laws = obs = doutrines = result =''
-        quotes = tags = [] 
+        quotes = tags = similarAcordaos = [] 
         partes    = self.parseItem( self.getFoundSection( 0, sections))
         decision  = self.parseItem( self.getFoundSection( 1, sections))
         tags      = self.parseItem( self.getFoundSection( 2, sections))
         laws      = self.getLaws( self.getFoundSection( 3, sections))
         obs       = self.parseItem( self.getFoundSection( 4, sections))
-	similarAcordaos = self.getSimilarAcordaos( self.getFoundSection( 5, sections))
-	#if similarAcordaos:
-	 #   print("similar acordaos: ")
-	 #   print( similarAcordaos)
+        similarAcordaos = self.getSimilarAcordaos( self.getFoundSection( 5, sections))
         doutrines = self.parseItem( self.getFoundSection( 6, sections))
         if tags:
             tags = re.split(r'[\n,\-.]+', tags)
@@ -110,7 +103,7 @@ class STFSpider(BaseSpider):
             acordaoId   = acordaoId,
             localSigla  = ufShort,
             local       = uf,
-#           publicacao  = publicacao,
+            publicacao  = publicacao,
             dataJulg    = dataJulg,
             orgaoJulg   = orgaoJulg,
             partes      = partes,
@@ -122,7 +115,7 @@ class STFSpider(BaseSpider):
             doutrinas   = doutrines,
             observacao  = obs, 
             tags        = tags, 
-	    acordaosSimilares = similarAcordaos,
+	        acordaosSimilares = similarAcordaos,
             tribunal    = "stf",
             index       = self.fIndex
         )
@@ -167,38 +160,7 @@ class STFSpider(BaseSpider):
                     q = q.replace('-', ' ')
                     q = q.strip().upper()
                     quotes.append( q) 
-#                    print "found q: "+ q
-#                else:
-#                    print "raw"
-#                    print data
-#                    print "-------------"
-#                    print "not found"
-#                    print q 
-#                    print "-------------"
         return quotes
-
-#    def getResult( self, txt):
-#        result = ''
-#        print txt
-#        txt = txt.split('\r\n')
-#        print '------------------'
-#        dataHeaders = [
-#            'Vota',
-#            'Resultado:',
-#            'Veja:',
-#            ''
-#        ]
-#        temp = re.search('Resultado:\s*(.*)\r\n', txt[0])
-#        if temp:
-#            print temp.group(1)
-#        
-    #   temp = re.search('Resultado:\s*(.*)', txt)
-   #     if temp:
-  #          temp = a.group(1)
- #           temp = re.search('(.*)(Ac.rd.o[s]? citado)', temp)
- #       if temp:
-  #          temp
-   #         print result
 
     def getFoundSection( self, n, sections):
         if n in sections.keys():
@@ -207,94 +169,77 @@ class STFSpider(BaseSpider):
             return ''
 
     def getSimilarAcordaos( self, raw):
-	similar = []
-	lines = raw.split("\n")
-	if len(lines) <= 1:
-	    return []
-	for i in xrange(0,len(lines)):
-	    if not lines[i].startswith(" "):
-	        similarAcordaoId = lines[i].replace(' PROCESSO ELETRÔNICO'.decode("utf8"),"").strip()
-	        similarAcordaoId = similarAcordaoId.replace(' ACÓRDÃO ELETRÔNICO'.decode("utf8"),"").strip()
-	        similarAcordaoId = similarAcordaoId.replace('-'," ").strip()
-                match = re.match( r"\s*(?:JULG|ANO)-([\d\-]+)\s+UF-(\w\w)\s+TURMA-([\w\d]+)\s+MIN-([\w\s]+).*", lines[i+1]) 
-		if not match:
-		    print( lines[i:i+2])
-		    continue
-		dataJulg = (match.group(1)).split("-")
-#		if len(dataJulg) > 1:
-#		    dataJulg = datetime( dataJulg[2], dataJulg[1], dataJulg[0])
-#		print(dataJulg)
-#		ufShort = match.group(2)
-#		print(ufShort)
-#		orgaoJulg = match.group(3)
-#		print(orgaoJulg)
-#		relator = self.parseItem( match.group(4)).title()
-#		print(relator)
-	        similar.append( similarAcordaoId) 
-	return( similar)
-##		yield( 
-#                item = StfItem(
-#                        acordaoId   = similarAcordaoId,
-#                        localSigla  = ufShort,
-#                        local       = "",
-#                        dataJulg    = dataJulg,
-#                        orgaoJulg   = "",
-#                        partes      = "",
-#                        relator     = relator,
-#                        ementa      = "",
-#                        decisao     = "",
-#                        citacoes    = [],
-#                        legislacao  = [],
-#                        doutrinas   = "",
-#                        observacao  = "", 
-#                        tags        = [], 
-#                        tribunal    = "stf",
-#			virtual     = "sim",
-#                        index       = self.fIndex
-#	            )
-##		)
-#	        self.fIndex+=1
+        similar = []
+        lines = raw.split("\n")
+        if len(lines) <= 1:
+            return []
+        for i in xrange(0,len(lines)):
+            if lines[i].startswith(" "):
+                continue
+            similarAcordaoId = lines[i].replace(' PROCESSO ELETRÔNICO'.decode("utf8"),"").strip()
+            similarAcordaoId = similarAcordaoId.replace(' ACÓRDÃO ELETRÔNICO'.decode("utf8"),"").strip()
+            similarAcordaoId = similarAcordaoId.replace('-'," ").strip()
+            dataJulg = orgaoJulg = relator = ""
+            if len(lines) > i+1:
+                dataJulg  = self.getMatchText( lines[i+1], r".*(?:JULG|ANO)-([\d\-]+).*") 
+                ufShort   = self.getMatchText( lines[i+1], r".*UF-(\w\w).*") 
+                orgaoJulg = self.getMatchText( lines[i+1], r".*TURMA-([\w\d]+).*") 
+                relator   = self.getMatchText( lines[i+1], r".*M[Ii][Nn][-. ]+([^\.]+)")
+                relator   = relator.replace(" N", "").strip()
+                if not dataJulg or not ufShort or not relator:
+                    print "doesn't match"
+                    print( lines[i:i+3])
+                    continue
+                dataJulg = dataJulg.split("-")
+                if len(dataJulg) > 1:
+                    dataJulg = datetime( int(dataJulg[2]), int(dataJulg[1]), int(dataJulg[0]))
+            similarAcordao = StfItem( acordaoId = similarAcordaoId, localSigla = ufShort, dataJulg = dataJulg)
+            similar.append( similarAcordao) 
+        return( similar)
 
     def getLaws( self, raw):    
         laws = []
+        law = {} 
+        references ="" 
         lines = raw.split("\n")
         for l in lines:
             l = l.encode("utf-8").upper()
-            lawType = self.getMatchText( l, r"\s*(?:LEG-...)\s*(\w+)[:-]?[\d+\*]?(?:\s*ANO:\d+)?.*")
-            lawNum  = self.getMatchText( l, r"\s*(?:LEG-...)\s*\w+[:-](\d+)\s*(?:\s*ANO:\d+)?.*")
-            if lawNum or lawType:
-                lawYear = self.getMatchText( l, r".*ANO[-:](\d+).*")
-                lawItem = StfLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
-                laws.append( dict(lawItem))
-#                print l.encode("utf-8")
- #               print "Type: "+ lawType
-#              print "num: "+ lawNum
- #               print "ano : "+ lawYear
-  #              print "---------------------------------"
+            if l.startswith("LEG-"):
+                if references:
+                    refs = re.split("\s*(ART-[\w\d]+(?:\s+(?:INC|PAR|LET)-[\w\d]+)*)\s*", references.strip())
+                    temp = refs
+                    refs = []
+                    for i,r in enumerate(temp):
+                        r = r.strip()
+                        if r.startswith("ART") or i == len(temp)-1:
+                            refs.append( r)
+                    if len( refs) > 1:
+                        law["descricao"] = refs.pop()
+                        law["artigos"] = refs
+                    else:
+                        law["descricao"] = references.strip()
+                        law["artigos"] =[] 
+                    laws.append( dict(law))
+                    law ={} 
+                    references ="" 
+                law["sigla"] = self.getMatchText( l, r"\s*LEG-\w+\s+([^\s]+).*")
+                law["tipo"] = self.getMatchText( l, r"\s*LEG-(\w+).*")
+                law["ano"] = self.getMatchText( l, r".*ANO[-:](\d+).*")
             else:
-                lawType = self.getMatchText( l, r"\s*([A-Z]+)\-\d+[\w^\- ]+")  
-                if lawType == "ART" or lawType =="PAR" or lawType == "INC":
-                    continue;
-                lawYear = self.getMatchText( l, r"\s*[A-Z]+\-(\d+)[\w^\- ]+")  
-                lawNum = ""
-                if lawType:
-                    if len(lawYear) == 2:
-                        if int(lawYear) > 15:
-                            lawYear = "19"+ lawYear
-                        else:
-                            lawYear = "20"+ lawYear
-#                    print l
- #                   print "foundn2Type: "+ lawType
-#                    print "founnn2ano : "+ lawYear
- #                   print "---------------------------------"
-                    lawItem = StfLawItem( tipo = lawType, numero = lawNum, ano = lawYear)
-                    laws.append( dict(lawItem))
-                #else:
-#                    print "----------not found-----------------------"
- #                   print l
-  #                  print "---------------------------------"
+                references = references.strip() + " "+l.strip()+""
         return laws
  
+    def printLaw( self, law):
+        print '-------------------------------------------------------------'
+        print "sigla: "+ law["sigla"]
+        print "desc: "+ law["descricao"]
+        print "tipo: "+ law["tipo"]
+        print "ano: "+ law["ano"]
+        print "artigos: "
+        for i,a in enumerate(law["artigos"]):
+            print str(i) +": "+ a
+        print '-------------------------------------------------------------'
+
     def printItem( self, item):
         print '-------------------------------------------------------------'
         print 'relator:\n'+item['relator']
