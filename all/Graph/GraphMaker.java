@@ -84,7 +84,7 @@ public class GraphMaker {
                 }
             }
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
-            link.append("acordaoId", acordao.get("acordaoId"));
+            link.append("id", acordao.get("acordaoId"));
             link.append("localSigla", acordao.get("localSigla"));
             link.append("ementa", acordao.get("ementa"));
             link.append("decisao", acordao.get("decisao"));
