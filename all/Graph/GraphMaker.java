@@ -13,7 +13,7 @@ public class GraphMaker {
     private static DBCollection acordaos;
 
     public GraphMaker( String dbName, String acordaosCollectionName) throws UnknownHostException{
-	String linksCollectionName = "links" + acordaosCollectionName.toUpperCase(); 
+	    String linksCollectionName = "links" + acordaosCollectionName.toUpperCase(); 
         MongoClient mongoClient = new MongoClient();
         DB db = mongoClient.getDB( dbName );
 
@@ -22,19 +22,19 @@ public class GraphMaker {
     }
 
     protected void makeGraph() {
-	links.drop();
+	    links.drop();
         total = acordaos.count();
-	for( int i = 1, step = 10000; i <= 290000; i += step){ 
-	    BasicDBObject query = new BasicDBObject(2);
-	    query.put("$gte", i);
-	    query.put("$lt", i+step);
+        for( int i = 1, step = 10000; i <= total; i += step){ 
+	        BasicDBObject query = new BasicDBObject(2);
+	        query.put("$gte", i);
+	        query.put("$lt", i+step);
             DBCursor cursor = acordaos.find( new BasicDBObject("index",query));
-	    cursor.addOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
+	        cursor.addOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
             while( cursor.hasNext()) {
-		printProgress();
+    		    printProgress();
                 DBObject acordao = cursor.next();
-	        processAcordao( acordaos, links, acordao);
-	    }
+                processAcordao( acordaos, links, acordao);
+            }
         }
         System.out.println("\n");
     }
@@ -57,13 +57,32 @@ public class GraphMaker {
 
     private static void processAcordao( DBCollection acordaos, DBCollection links, DBObject acordao) {
             ArrayList<String> foundQuotes = new ArrayList<String>();
+            ArrayList<String> similars = new ArrayList<String>();
             BasicDBList quotes = (BasicDBList) acordao.get("citacoes");
+            BasicDBList similarAcordaos = (BasicDBList) acordao.get("acordaosSimilares");
             for( Object quote : quotes) {
                 BasicDBObject query = new BasicDBObject("acordaoId", (String)quote);
                 BasicDBObject foundQ = (BasicDBObject)acordaos.findOne(query);
                 if( foundQ != null) foundQuotes.add( (String)quote);
             }
-
+            for( Object similar : similarAcordaos) {
+                DBObject similarAcordao = (DBObject)similar;
+                String similarAcordaoId = (String)similarAcordao.get("acordaoId"); 
+                BasicDBObject query = new BasicDBObject("acordaoId", similarAcordaoId);
+                BasicDBObject found = (BasicDBObject)acordaos.findOne(query);
+                similars.add( (String)similarAcordaoId);
+                if( found != null) System.out.println("found similar");
+                else{
+                    BasicDBObject virtualLink = new BasicDBObject();
+                    virtualLink.append("id", similarAcordao.get("acordaoId"));
+                    virtualLink.append("relator", acordao.get("relator"));
+                    virtualLink.append("data", acordao.get("dataJulg"));
+                    virtualLink.append("localSigla", acordao.get("localSigla"));
+                    virtualLink.append("virtual", true);
+                    virtualLink.append("principal",  acordao.get("acordaoId"));
+                    links.insert( virtualLink);
+                }
+            }
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
             link.append("acordaoId", acordao.get("acordaoId"));
             link.append("localSigla", acordao.get("localSigla"));
@@ -74,6 +93,8 @@ public class GraphMaker {
             link.append("tribunal", acordao.get("tribunal"));
             link.append("index", acordao.get("index"));
             link.append("citacoes", foundQuotes);
+            link.append("virtual", false);
+            link.append("acordaosSimilares", similars);
             links.insert(link);
     }
 }
