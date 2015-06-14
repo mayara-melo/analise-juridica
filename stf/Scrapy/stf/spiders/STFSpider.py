@@ -103,7 +103,7 @@ class STFSpider(BaseSpider):
             acordaoId   = acordaoId,
             localSigla  = ufShort,
             local       = uf,
-            #publicacao  = publicacao,
+            publicacao  = publicacao,
             dataJulg    = dataJulg,
             orgaoJulg   = orgaoJulg,
             partes      = partes,
@@ -149,7 +149,7 @@ class STFSpider(BaseSpider):
 
     def getAcordaosQuotes( self, txt):
         quotes = []
-        data = re.search(("Acórdão(?:\(?s\)?)? citado(?:\(?s\)?)?\s*:\s*([^:]*)(?=\.[^:])").decode("utf-8"), txt)
+        data = re.search(("Acórdão(?:\s*\(?s\)?)? citado(?:\s*\(?s\)?)?\s*:\s*([^:]*)(?=\.[^:])").decode("utf-8"), txt)
         if data:
             data = (data.group(1))
             data = re.split('[;,.()]', data)

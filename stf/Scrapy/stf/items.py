@@ -4,6 +4,7 @@ class StfItem(Item):
     acordaoId   = Field()
     localSigla  = Field()
     local       = Field()
+    publicacao  = Field()
  #   tipo        = Field()
     relator     = Field()
  #   orgaoJulg   = Field()
@@ -27,4 +28,5 @@ class StfItem(Item):
 class StfLawItem(Item):
     tipo   = Field()
     ano    = Field()
-    numero = Field()
+    sigla  = Field()
+    artigos = Field()
