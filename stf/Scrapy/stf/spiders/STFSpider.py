@@ -55,7 +55,7 @@ class STFSpider(BaseSpider):
             'Indexa',   # p/strong/text() sec next pre
             'Legisla',  # p/strong/text() sec next pre
             'Observa',  # p/strong/text() sec next pre
-	    'Acórdãos no mesmo'.decode("utf-8"),
+     	    'Acórdãos no mesmo'.decode("utf-8"),
             'Doutrina'    # p/strong/text() sec next pre
         ]
         for doc in body:
@@ -186,7 +186,7 @@ class STFSpider(BaseSpider):
                 orgaoJulg = self.getMatchText( lines[i+1], r".*TURMA-([\w\d]+).*") 
                 relator   = self.getMatchText( lines[i+1], r".*M[Ii][Nn][-. ]+([^\.]+)")
                 relator   = relator.replace(" N", "").strip()
-                if not dataJulg or not ufShort or not relator:
+                if not dataJulg and not ufShort and not relator:
                     print "doesn't match"
                     print( lines[i:i+3])
                     continue

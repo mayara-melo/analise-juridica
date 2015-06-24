@@ -17,30 +17,32 @@ public class PageRanker{
     private String linksName;
 
     public PageRanker( String dbName, String linksName) throws UnknownHostException {
-	this.linksName = linksName;
+	    this.linksName = linksName;
         MongoClient mongoClient = new MongoClient();
         this.db = mongoClient.getDB( dbName );
         this.links = db.getCollection(linksName);
-	buildMap();
-	n = (double)acordaos.size();
+	    buildMap();
+	    n = (double)acordaos.size();
     }
 
     private void buildMap() throws UnknownHostException {
         Long numAcordaos = links.count();
         Double n = numAcordaos.doubleValue();
+     //   DBCursor cursor = links.find(new BasicDBObject("virtual", false));
         DBCursor cursor = links.find();
         cursor.addOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
-        while(cursor.hasNext()) {
+        while( cursor.hasNext()) {
             DBObject acordaoObject = cursor.next();
             try {
-                String id          = acordaoObject.get("acordaoId").toString();
-		String relator     = acordaoObject.get("relator").toString();
-		String data        = acordaoObject.get("data").toString();
-		String tribunal    = acordaoObject.get("tribunal").toString();
-                BasicDBList quotes = (BasicDBList) acordaoObject.get("citacoes");
+                String id           = acordaoObject.get("acordaoId").toString();
+        		String relator      = acordaoObject.get("relator").toString();
+		        String data         = acordaoObject.get("data").toString();
+                BasicDBList quotes  = (BasicDBList) acordaoObject.get("citacoes");
+		        String tribunal     = acordaoObject.get("tribunal").toString();
+                BasicDBList similar = (BasicDBList) acordaoObject.get("similarAcordaos");
                 ArrayList<String> quotesIDs = dbListToArrayListOfIDs( quotes);
 
-                Acordao acordao = new Acordao( id, relator, data, tribunal, quotesIDs, numAcordaos);
+                Acordao acordao = new Acordao( id, relator, data, tribunal, quotesIDs, similar, numAcordaos);
                 acordaos.put(id, acordao);
 
             } catch(NullPointerException ex) {
@@ -53,11 +55,11 @@ public class PageRanker{
             for (String q : quotes) {
                 Acordao quotedAcordao = acordaos.get( q);
                 if( quotedAcordao != null) {
-		    acordao.quotes.add( quotedAcordao);
+		            acordao.quotes.add( quotedAcordao);
                     quotedAcordao.isQuotedBy.add( acordao);
-		}
-		else
-	            System.out.println("not found quotes: "+ q);
+		        }
+		        else
+	                System.out.println("not found quotes: "+ q);
             }
         }
     }
@@ -115,7 +117,7 @@ public class PageRanker{
         for (Acordao acordao : acordaos.values()) {
             BasicDBObject doc = new BasicDBObject();
             doc.append("id", acordao.getID());
-	    doc.append("relator", acordao.getRelator());
+            doc.append("relator", acordao.getRelator());
             doc.append("pageRank", acordao.pageRank);
             ArrayList<String> quotingAcordaos = new ArrayList<String>();
             for (Acordao quoting : acordao.isQuotedBy) {
@@ -131,60 +133,102 @@ public class PageRanker{
         }
     }
 
-    protected void calculatePageRanks1() throws UnknownHostException {
+    private double pageRank1sum( ArrayList<Acordao> isQuotedBy){
+        Double sum = 0.0;
+        for(Acordao quotingAcordao : isQuotedBy) {
+            Double pr = quotingAcordao.pageRank;
+            Integer l = quotingAcordao.quotes.size();
+            Double term = pr/l;
+            sum += term;
+        }
+        return sum;
+    }
+    
+    private double pageRank2sum( ArrayList<Acordao> isQuotedBy){
+        Double sum = 0.0;
+        for(Acordao quotingAcordao : isQuotedBy) {
+            Double pr = quotingAcordao.pageRank;
+            sum += pr;
+        }
+        return sum;
+    }
 
-	HashMap<String, Double> pageRanks = initPageRanks();
-	Integer rounds = 0;
+    private double pageRankSum( Acordao acordao, Integer mode, Boolean considerVirtualAcordaos){
+        Double sum = 0.0;
+        Integer l = 1
+        for(Acordao quotingAcordao : acordao.isQuotedBy) {
+            Double pr = quotingAcordao.pageRank;
+            if( mode == 1) l =  quotingAcordao.quotes.size();
+            Double term = pr/l;
+            sum += term;
+        }
+        if( considerVirtualAcordaos)
+            sum += acordao.similarAcordaos.size/acordao;
+        return sum;
+    }
+    
+    protected void calculatePageRanks( Integer mode, Boolean considerVirtualAcordaos) throws UnknownHostException {
+
+	    HashMap<String, Double> pageRanks = initPageRanks();
+	    Integer rounds = 0;
         while(true) {
-	    Double prSum = 0.0;
             for (Acordao acordao : acordaos.values()) {
-                Double sum = 0.0;
-                for(Acordao quotingAcordao : acordao.isQuotedBy) {
-                    Double pr = quotingAcordao.pageRank;
-                    Integer l = quotingAcordao.quotes.size();
-                    Double term = pr/l;
-                    sum += term;
-                }
+                Double sum = pageRankSum( mode, acordao.isQuotedBy, considerVirtualAcordaos);
                 acordao.tempPageRank = ((1 - d) / n) + (d * sum);
-		prSum += acordao.tempPageRank;
             }
-//	    HashMap<String, Double> newPageRanks = updateNormalizePageRanks( prSum);
-	    HashMap<String, Double> newPageRanks = updatePageRanks();
-	    rounds += 1;
+	        HashMap<String, Double> newPageRanks = updatePageRanks();
+	        rounds += 1;
             if (euclidianDistance(pageRanks, newPageRanks) < epsilon) break;
 
             pageRanks.clear();
             pageRanks = (HashMap<String, Double>) newPageRanks.clone();
         }
-	System.out.println("rounds: "+rounds.toString());
-	DBCollection pageRanked = db.getCollection( linksName+"pageRanked1");
+     	System.out.println("rounds: "+rounds.toString());
+	    DBCollection pageRanked = db.getCollection( linksName+"pageRanked1");
+        insertPageRanksInCollection( pageRanked);
+    }
+
+    protected void calculatePageRanks1() throws UnknownHostException {
+
+	    HashMap<String, Double> pageRanks = initPageRanks();
+	    Integer rounds = 0;
+        while(true) {
+            for (Acordao acordao : acordaos.values()) {
+                Double sum = pageRank1sum( acordao.isQuotedBy);
+                acordao.tempPageRank = ((1 - d) / n) + (d * sum);
+            }
+//	    HashMap<String, Double> newPageRanks = updateNormalizePageRanks( prSum);
+	        HashMap<String, Double> newPageRanks = updatePageRanks();
+	        rounds += 1;
+            if (euclidianDistance(pageRanks, newPageRanks) < epsilon) break;
+
+            pageRanks.clear();
+            pageRanks = (HashMap<String, Double>) newPageRanks.clone();
+        }
+     	System.out.println("rounds: "+rounds.toString());
+	    DBCollection pageRanked = db.getCollection( linksName+"pageRanked1");
         insertPageRanksInCollection( pageRanked);
     }
 
     protected void calculatePageRanks2() throws UnknownHostException {
 
-	HashMap<String, Double> pageRanks = initPageRanks();
-	Integer rounds = 0;
-        while(true) {
-	    Double prSum = 0.0;
-            for (Acordao acordao : acordaos.values()) {
-                Double sum = 0.0;
-                for(Acordao quotingAcordao : acordao.isQuotedBy) {
-                    sum = quotingAcordao.pageRank;
+	    HashMap<String, Double> pageRanks = initPageRanks();
+	    Integer rounds = 0;
+            while(true) {
+                for (Acordao acordao : acordaos.values()) {
+                    Double sum = pageRank2sum( acordao.isQuotedBy);
+                    acordao.tempPageRank = ((1 - d) / n) + (d * sum);
                 }
-                acordao.tempPageRank = ((1 - d) / n) + (d * sum);
-		prSum += acordao.tempPageRank;
-            }
 //	    HashMap<String, Double> newPageRanks = updateNormalizePageRanks( prSum);
-	    HashMap<String, Double> newPageRanks = updatePageRanks();
-	    rounds += 1;
-            if (euclidianDistance(pageRanks, newPageRanks) < epsilon) break;
+	            HashMap<String, Double> newPageRanks = updatePageRanks();
+	            rounds += 1;
+                if (euclidianDistance(pageRanks, newPageRanks) < epsilon) break;
 
-            pageRanks.clear();
-            pageRanks = (HashMap<String, Double>) newPageRanks.clone();
-        }
-	System.out.println("rounds: "+rounds.toString());
-	DBCollection pageRanked = db.getCollection( linksName+"pageRanked2");
+                pageRanks.clear();
+                pageRanks = (HashMap<String, Double>) newPageRanks.clone();
+            }
+	    System.out.println("rounds: "+rounds.toString());
+	    DBCollection pageRanked = db.getCollection( linksName+"pageRanked2");
         insertPageRanksInCollection( pageRanked);
     }
 }

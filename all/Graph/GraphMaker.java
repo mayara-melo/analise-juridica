@@ -71,16 +71,22 @@ public class GraphMaker {
                 BasicDBObject query = new BasicDBObject("acordaoId", similarAcordaoId);
                 BasicDBObject found = (BasicDBObject)acordaos.findOne(query);
                 similars.add( (String)similarAcordaoId);
-                if( found != null) System.out.println("found similar");
+                if( found != null) System.out.println("found similar "+similarAcordaoId);
                 else{
+                    BasicDBList similarAcordaoQuotes = new BasicDBList();
+                    similarAcordaoQuotes.add( acordao.get("acordaoId"));
+                    BasicDBObject alreadyInGraph = (BasicDBObject)acordaos.findOne( new BasicDBObject("id", similarAcordaoId));
+                    if( alreadyInGraph != null){
+                        similarAcordaoQuotes.addAll( alreadyInGraph.get("citacoes"));
+                    }
                     BasicDBObject virtualLink = new BasicDBObject();
-                    virtualLink.append("id", similarAcordao.get("acordaoId"));
+                    virtualLink.append("id", similarAcordaoId);
                     virtualLink.append("relator", acordao.get("relator"));
                     virtualLink.append("data", acordao.get("dataJulg"));
                     virtualLink.append("localSigla", acordao.get("localSigla"));
                     virtualLink.append("virtual", true);
-                    virtualLink.append("principal",  acordao.get("acordaoId"));
-                    links.insert( virtualLink);
+                    virtualLink.append("citacoes",  similarAcordaoQuotes);
+                    links.save( virtualLink);
                 }
             }
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
