@@ -64,7 +64,7 @@ class STFSpider(BaseSpider):
         relator   = parser.parseRelator( title[7])
         dataJulg  = parser.parseDataJulgamento( ''.join(title[1:]))
         orgaoJulg = parser.parseOrgaoJulgador( ''.join(title[1:]))
-        print orgaoJulg
+#        print orgaoJulg
 
         publicacao  = doc.xpath('pre[1]/text()').extract()[0].strip()
         ementa      = doc.xpath('strong[1]/p/text()').extract()[1].strip()

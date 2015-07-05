@@ -20,7 +20,7 @@ class STFParser( AcordaoParser):
         text = text.replace('&nbsp', '').strip()
         match = re.search('Julgador:\s*(.*)\s*', text)
         if match:
-            return match.group(1).strip()
+            return match.group(1).upper().strip()
         return ''
 
     def parseAcordaosQuotes( self, txt):
@@ -38,37 +38,92 @@ class STFParser( AcordaoParser):
                     q = q.strip().upper()
                     quotes.append( q) 
         return quotes
+
  
+    def parseLawReferences( self, text):
+        refs = re.split("((?:CAP|INC|PAR|LET|ART)-[\w\d]+)\s*", text)
+        ref = {}
+        lawRefs = []
+        nCap = nArt = nPar = nInc = nAli = 0
+        refs = filter(None, refs)
+        for r in refs:
+            r = r.strip()
+            if r.startswith("CAP"):
+                if nCap:
+                    print "CAPPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+                    lawRefs.append( dict(ref))
+                    ref = {}
+                    nArt = nInc = nPar = nLet = 0
+                ref["capitulo"] = self.getMatchText( r, "CAP[- ]+([\d\w]+).*")
+                nCap = 1
+            elif r.startswith("ART"):
+                if nArt:
+                    lawRefs.append( dict(ref))
+                    ref.pop("inciso", None)
+                    ref.pop("alinea", None)
+                    ref.pop("paragrafo", None)
+                    nInc = nPar = nLet = 0
+                ref["artigo"] = self.getMatchText( r, "ART[- ]+([\d\w]+).*")
+                nArt = 1
+            elif r.startswith("PAR"):
+                if nPar or nAli:
+                    lawRefs.append( dict(ref))
+                    ref.pop("inciso", None)
+                    ref.pop("alinea", None)
+                    nInc = nAli = 0
+                ref["paragrafo"] = self.getMatchText( r, "PAR[- ]+([\d\w]+)")
+                nPar = 1
+            elif r.startswith("INC"):
+                if nInc or nAli:
+                    lawRefs.append( dict(ref))
+                    ref.pop("alinea", None)
+                    nAli = 0
+                ref["inciso"] = self.getMatchText( r, "INC[- ]+([\d\w]+)")
+                nInc = 1
+            elif r.startswith("LET"):
+                if nAli:
+                    lawRefs.append( dict(ref))
+                nAli = 1
+                ref["alinea"] = self.getMatchText( r, "LET[- ]+([\d\w]+)")
+            elif r.startswith("\"CAPUT"):
+                ref["caput"] = 1  
+                lawRefs.append( dict(ref))
+                nAli = nInc = nPar = nLet = 0
+                ref.pop("inciso", None)
+                ref.pop("alinea", None)
+                ref.pop("caput", None)
+                ref.pop("paragrafo", None)
+            else:
+                print r
+        if ref:
+            lawRefs.append( dict(ref))
+        return lawRefs 
+
     def parseLaws( self, text):    
         laws = []
-        law = {} 
-        references ="" 
+        law = {}
+        refs = {}
+        lawLines = []
         lines = text.split("\n")
         for l in lines:
             l = l.encode("utf-8").upper()
-            if l.startswith("LEG-"):
-                if references:
-                    refs = re.split("\s*(ART-[\w\d]+(?:\s+(?:INC|PAR|LET)-[\w\d]+)*)\s*", references.strip())
-                    temp = refs
-                    refs = []
-                    for i,r in enumerate(temp):
-                        r = r.strip()
-                        if r.startswith("ART") or i == len(temp)-1:
-                            refs.append( r)
-                    if len( refs) > 1:
-                        law["descricao"] = refs.pop()
-                        law["artigos"] = refs
+            if l.startswith("LEG"):
+                if lawLines:
+                    if re.match( "\s*(PAR|INC|ART|CAP|LET).*", lawLines[-1]):
+                        law["descricao"] = ""
                     else:
-                        law["descricao"] = references.strip()
-                        law["artigos"] =[] 
-                    laws.append( dict(law))
-                    law ={} 
-                    references ="" 
+                        law["descricao"] = lawLines.pop().split()
+                    law["refs"] = self.parseLawReferences( ''.join( lawLines))
+                    if law:
+                        self.printLaw( law)
+                    laws.append( law)
+                    law = {}
+                    lawLines = [] 
                 law["sigla"] = self.getMatchText( l, r"\s*LEG-\w+\s+([^\s]+).*")
                 law["tipo"] = self.getMatchText( l, r"\s*LEG-(\w+).*")
                 law["ano"] = self.getMatchText( l, r".*ANO[-:](\d+).*")
             else:
-                references = references.strip() + " "+l.strip()+""
+                lawLines.append( " "+l.strip())
         return laws
  
     def parseSimilarAcordaos( self, raw):
@@ -107,7 +162,9 @@ class STFParser( AcordaoParser):
         print "desc: "+ law["descricao"]
         print "tipo: "+ law["tipo"]
         print "ano: "+ law["ano"]
-        print "artigos: "
-        for i,a in enumerate(law["artigos"]):
-            print str(i) +": "+ a
+        print "refs: "
+ #       print law["refs"]
+        for i,a in enumerate(law["refs"]):
+            print a
         print '-------------------------------------------------------------'
+
