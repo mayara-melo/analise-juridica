@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 
 class STFParser( AcordaoParser):
 
+
+
     def parseDataJulgamento( self, text):
         text = text.replace('&nbsp', '').strip()
         date = re.search('Julgamento:\s*(\d{2})\/(\d{2})\/(\d{4}).*', text)
@@ -97,8 +99,6 @@ class STFParser( AcordaoParser):
                 ref.pop("inciso", None)
                 ref.pop("alinea", None)
                 ref.pop("paragrafo", None)
-            else:
-                print r
         if ref:
             lawRefs.append( dict(ref))
         return lawRefs 

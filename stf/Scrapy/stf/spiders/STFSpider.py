@@ -64,7 +64,6 @@ class STFSpider(BaseSpider):
         relator   = parser.parseRelator( title[7])
         dataJulg  = parser.parseDataJulgamento( ''.join(title[1:]))
         orgaoJulg = parser.parseOrgaoJulgador( ''.join(title[1:]))
-#        print orgaoJulg
 
         publicacao  = doc.xpath('pre[1]/text()').extract()[0].strip()
         ementa      = doc.xpath('strong[1]/p/text()').extract()[1].strip()
@@ -72,8 +71,8 @@ class STFSpider(BaseSpider):
         headers = doc.xpath('p/strong/text()').extract()[len(title)+1:-1]
         bodies  = doc.xpath('pre/text()').extract()[1:]
         sections = zip( headers, bodies)
-
-        partes     = self.getSectionBodyByHeader( "Parte", sections)
+        print acordaoId
+        partesRaw  = self.getSectionBodyByHeader( "Parte", sections)
         decision   = self.getSectionBodyByHeader( "Decis", sections)
         tagsRaw    = self.getSectionBodyByHeader( "Index", sections)
         lawsRaw    = self.getSectionBodyByHeader( "Legisla", sections)
@@ -81,6 +80,7 @@ class STFSpider(BaseSpider):
         similarRaw = self.getSectionBodyByHeader( "Acórdaos no mesmo".decode("utf8"), sections)
         doutrines  = self.getSectionBodyByHeader( "Doutrinas", sections)
 
+        partes = parser.parsePartes( partesRaw)
         tags   = parser.parseTags( tagsRaw)
         quotes = parser.parseAcordaosQuotes( obs)
         laws   = parser.parseLaws( lawsRaw)
