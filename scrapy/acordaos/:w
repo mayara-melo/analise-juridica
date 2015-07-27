@@ -1,0 +1,184 @@
+# -*- coding: utf-8 -*-
+from scrapy.selector import Selector
+from scrapy.spider import BaseSpider
+from scrapy.http import FormRequest, Request
+from scrapy.utils.response import open_in_browser
+from acordaos.items import AcordaoItem
+from STJParser import STJParser
+import urlparse
+import re
+from scrapy.shell import inspect_response
+from datetime import datetime, timedelta
+import time
+
+class STJSpider(BaseSpider):
+
+    name = 'stj'
+    
+    def nextDay( self, date):
+        nextDay = datetime( int(date[0:4]), int(date[4:6]), int(date[6:8]))
+        nextDay += timedelta( days=1)
+        d = str(nextDay.day).zfill(2)
+        m = str(nextDay.month).zfill(2)
+        y = str(nextDay.year)
+        return y+m+d
+    
+    def getParametersFromFile( self):
+        print 'getting initial date and num previous acordaos from file'
+        file = open("../update_settings", 'r')
+        prevIndex = file.readline()
+        prevFinalDate = file.readline()
+        if prevIndex and prevFinalDate:
+            self.iIndex = int( prevIndex) +1
+            self.iDate = self.nextDay( str( prevFinalDate))
+        else:
+            print 'cannot read settings file'
+
+    def saveSearchInfo( self):
+        print 'saving search parameters on file update_settings'
+        file = open("../update_settings", 'w')
+        file.write( str(self.fIndex-1)+'\n')
+        file.write( self.fDate +'\n')
+        file.write( str(self.iIndex))
+        file.close()
+
+    def __init__ ( self, iDate, fDate, update):
+        self.domain = 'stj.jus.br'
+        self.start_urls = ["http://www.stj.jus.br/SCON/"]
+        self.iDate = str(iDate).zfill(5)
+        self.fDate = str(fDate).zfill(5)
+        self.iIndex = 1
+        if int(update) == 1:
+            self.getParametersFromFile()
+        self.fIndex = self.iIndex
+        print 'starting to scrape from index '+ str(self.iIndex)
+        print 'Acordaos from '+self.iDate+' to '+self.fDate
+        print "\n\n\n"
+
+    def parse(self, response):
+        yield FormRequest.from_response(
+            response,
+            formname='frmConsulta',
+            formdata={'livre':'(@DTDE >="'+self.iDate+'") E (@DTDE <="'+self.fDate+'")', 'b':'ACOR'},
+            callback=self.parseSearchResults
+        )
+
+    def parseDoc( self, doc):
+        relator = dataJulg = dataPublic = ementa = decisao = ''
+        laws = []
+        citacoes = []
+        notas = []
+        parser = STJParser()
+
+        sectionsSel = doc.xpath('.//div[@class="paragrafoBRS"]')
+        # Permanent order sections
+        processo = sectionsSel[0].xpath( './div[@class="docTexto"]/text()').extract()[0]
+
+        relatorRaw = sectionsSel[1].xpath('./pre/text()').extract()[0]
+        acordaoId  = parser.parseId( processo) 
+        localSigla = parser.parseUfShort( processo)
+        relator    = parser.parseRelator( relatorRaw)
+ 
+        dataJulgSel = self.getSectionSelectorByHeader( sectionsSel, 'Data do Julg')
+        dataJulg = parser.parseDataJulgamento( dataJulgSel.xpath( './pre/span/text()' ).extract()[0])
+
+        dataPublicSel = self.getSectionSelectorByHeader( sectionsSel, 'Data da Publ')
+#        print dataPublicSel.xpath('./pre/text()').extract()[0]
+        if dataPublicSel:
+            dataPublic = parser.parseDataPublicacao( dataPublicSel.xpath( './pre/text()').extract())
+        
+        ementaSel = self.getSectionSelectorByHeader( sectionsSel, 'Ementa')
+        if ementaSel:
+            ementa = parser.removeExtraSpaces( ementaSel.xpath('./pre/text()').extract()[0])
+
+        decisaoSel = self.getSectionSelectorByHeader( sectionsSel, 'Ac')
+        if decisaoSel:
+            decisao = parser.removeExtraSpaces( decisaoSel.xpath('./pre/text()').extract()[0])
+
+        notasSel = self.getSectionSelectorByHeader( sectionsSel, 'Nota')
+        if notasSel:
+            notas = parser.removeExtraSpaces( ''.join( notasSel.xpath('./pre//text()').extract()))
+           # print "notas\n"+ notas+"--------------"
+
+        lawSel = self.getSectionSelectorByHeader( sectionsSel, 'Refer')
+        if lawSel:
+            laws = parser.parseLaws( ''.join( lawSel.xpath('./pre//text()').extract()))
+           # print "leis\n"+ leis+"--------------"
+        citacoes = parser.parseAcordaoQuotes( self.getSectionSelectorByHeader( sectionsSel, 'Veja'))
+
+        doutrinasSel = self.getSectionSelectorByHeader( sectionsSel, 'Refer')
+        if doutrinasSel:
+            doutrinas = parser.removeExtraSpaces( ''.join( doutrinasSel.xpath('./pre//text()').extract()))
+#            print doutrinas
+
+        return AcordaoItem(
+                acordaoId   = acordaoId,
+                localSigla  = localSigla,
+                dataPublic  = dataPublic,
+                dataJulg    = dataJulg,
+                relator     = relator,
+                ementa      = ementa,
+                decisao     = decisao,
+         #       citacoes    = citacoes,
+                legislacao  = laws,
+                index       = self.fIndex,
+                notas       = notas,
+                tribunal    = 'stj'
+        )
+
+    def getSectionSelectorByHeader( self, selectors, header):
+        for s in selectors:
+            ha = s.xpath('./h4').extract()[0]
+            h = s.xpath('./h4/text()').extract()[0]
+            if h.startswith( header):
+                return s
+        return None
+
+    def parseSearchResults( self, response):
+        unicode(response.body.decode(response.encoding)).encode('utf-8')
+        sel = Selector(response)
+        #inspect_response(response, self)
+        resultsLines = sel.xpath(
+            '/html/body/div[@id="divprincipal"]'+
+            '/div[@class="minwidth"]'+
+            '/div[@id="idInternetBlocoEmpacotador"]'+
+            '/div[@class="incenter_interno"]'+
+            '/div[@id="idDivContainer"]'+
+            '/div[@id="idAreaBlocoExterno"]'+
+            '/div[@id="idArea"]'+
+            '/div[@id="corpopaginajurisprudencia"]'+
+            '/div[@id="resumopesquisa"]'+
+            '//div[@id="itemlistaresultados"]')
+        for line in resultsLines:
+            if (((line.xpath('./span[1]/text()').extract()[0]).strip()) == "Acórdãos".decode('utf8')):
+                resultsLink = line.xpath('./span[2]/a/@href').extract()[0]
+        yield Request( urlparse.urljoin('http://www.stj.jus.br/',
+                       resultsLink),
+                       callback=self.parsePage )
+ 
+    def parsePage( self, response):
+#        inspect_response(response, self)
+        unicode(response.body.decode(response.encoding)).encode('utf-8')
+        sel = Selector(response)
+        doclist = sel.xpath(
+            '/html/body/div[@id="divprincipal"]'+
+            '/div[@class="minwidth"]'+
+            '/div[@id="idInternetBlocoEmpacotador"]'+
+            '/div[@class="incenter_interno"]'+
+            '/div[@id="idDivContainer"]'+
+            '/div[@id="idAreaBlocoExterno"]'+
+            '/div[@id="idArea"]'+
+            '/div[@id="corpopaginajurisprudencia"]'+
+            '/div[@id="listadocumentos"]'+
+            '/div[@style="position: relative;"]')
+        for doc in doclist:
+            yield self.parseDoc( doc)
+            self.fIndex = self.fIndex + 1
+        nextPage = sel.xpath('//*[@id="navegacao"]/a[@class="iconeProximaPagina"]')
+        if nextPage:
+            yield Request( urlparse.urljoin('http://www.stj.jus.br/',
+                                            nextPage.xpath('@href').extract()[0]),
+                           callback=self.parsePage )
+        else:
+            self.saveSearchInfo()
+

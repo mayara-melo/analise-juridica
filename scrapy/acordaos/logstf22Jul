@@ -1,0 +1,348 @@
+2015-07-22 18:53:00-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=51&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 18:55:14-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=612&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 18:55:53-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=591&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 18:58:25-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=499&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 18:59:44-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=455&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 19:00:43-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=425&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 19:01:55-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=389&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 19:02:12-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=379&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 19:09:25-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=133&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 19:09:35-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=125&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 19:10:32-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=92&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	
+2015-07-22 19:11:26-0300 [stf] ERROR: Spider error processing <GET http://www.stf.jus.br/portal/jurisprudencia/listarJurisprudencia.asp?s1=%28%40JULG+%3E%3D+20010101%29%28%40JULG+%3C%3D+20030101%29&pagina=60&base=baseAcordaos>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 55, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STFSpider.py", line 84, in parseDoc
+	    partes = parser.parsePartes( partesRaw)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/AcordaoParser.py", line 59, in parsePartes
+	    n = temp[1].strip()
+	exceptions.IndexError: list index out of range
+	

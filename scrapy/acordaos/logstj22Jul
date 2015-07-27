@@ -1,0 +1,29 @@
+2015-07-23 23:46:16-0300 [stj] ERROR: Spider error processing <GET http://www.stj.jus.br/SCON/jurisprudencia/toc.jsp?tipo_visualizacao=null&data=%28%40DTDE+%3E%3D%2220010101%22%29+E+%28%40DTDE+%3C%3D%2220050305%22%29&b=ACOR&thesaurus=JURIDICO>
+	Traceback (most recent call last):
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/base.py", line 824, in runUntilCurrent
+	    call.func(*call.args, **call.kw)
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 638, in _tick
+	    taskObj._oneWorkUnit()
+	  File "/usr/lib/python2.7/dist-packages/twisted/internet/task.py", line 484, in _oneWorkUnit
+	    result = next(self._iterator)
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 57, in <genexpr>
+	    work = (callable(elem, *args, **named) for elem in iterable)
+	--- <exception caught here> ---
+	  File "/usr/lib/pymodules/python2.7/scrapy/utils/defer.py", line 96, in iter_errback
+	    yield next(it)
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/offsite.py", line 26, in process_spider_output
+	    for x in result:
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/referer.py", line 22, in <genexpr>
+	    return (_set_referer(r) for r in result or ())
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/urllength.py", line 33, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/usr/lib/pymodules/python2.7/scrapy/contrib/spidermiddleware/depth.py", line 50, in <genexpr>
+	    return (r for r in result or () if _filter(r))
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STJSpider.py", line 182, in parsePage
+	    yield self.parseDoc( doc)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STJSpider.py", line 93, in parseDoc
+	    dataPublic = parser.parseDataPublicacao( publicacao)
+	  File "/home/mayara/analise-juridica/scrapy/acordaos/spiders/STJParser.py", line 36, in parseDataPublicacao
+	    dataPublic = datetime( int(dataPublic.group(3)), int(dataPublic.group(2)), int(dataPublic.group(1)))
+	exceptions.AttributeError: 'NoneType' object has no attribute 'group'
+	
