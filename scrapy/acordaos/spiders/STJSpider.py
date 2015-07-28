@@ -67,8 +67,9 @@ class STJSpider(BaseSpider):
         relator = dataJulg = dataPublic = ementa = decisao = ''
         laws = []
         citacoes = []
+        similares = []
         parser = STJParser()
-        notas = lawsRaw = publicacao = observacao = doutrinas = ''
+        notas = lawsRaw = publicacao = observacao = doutrinas = similaresRaw =''
 
         sectionsSel = doc.xpath('.//div[@class="paragrafoBRS"]')
         # Permanent order sections
@@ -89,10 +90,12 @@ class STJSpider(BaseSpider):
         lawSel     = self.getSectionSelectorByHeader( sectionsSel, 'Refer') #Referência Legislativa
         obsSel     = self.getSectionSelectorByHeader( sectionsSel, 'Veja')
 
-        similares  = self.getSectionSelectorByHeader( sectionsSel, 'Sucess') #Sucessivos
-        if similares:
-            print "SUCESSIVOSSSSSSSSSSSSSSSS"
-            print similares.xpath('./pre/text()')
+        similaresSel  = self.getSectionSelectorByHeader( sectionsSel , 'Sucess') #Sucessivos
+
+        if similaresSel:
+            similaresRaw = similaresSel.xpath('pre[@class="docTexto"]/text()').extract()
+            similares = parser.parseSimilarAcordaos( similaresRaw)
+            similaresRaw = '. '.join( similaresRaw)
 
         relator    = parser.parseRelator( relatorRaw)
         tags       = parser.parseTags( resumo)
@@ -102,8 +105,9 @@ class STJSpider(BaseSpider):
             dataPublic = parser.parseDataPublicacao( publicacao)
 
         if lawSel:
-            lawsRaw = ''.join( lawSel.xpath('./pre//text()|./pre/a/text()').extract()).strip()
+            lawsRaw = lawSel.xpath('./pre//text()|./pre/a/text()').extract()
             laws = parser.parseLaws( lawsRaw)
+            lawsRaw = ' '.join( lawsRaw)
 
         if obsSel:
             observacao = ''.join( obsSel.xpath('./pre//text()|./pre/a/text()').extract()).strip()
@@ -121,11 +125,13 @@ class STJSpider(BaseSpider):
                 ementa      = parser.removeExtraSpaces( ementa),
                 decisao     = parser.removeExtraSpaces( decisao),
                 resumo      = resumo,
+                doutrinas   = doutrinas,
                 tags        = tags,
                 observacao  = observacao,
                 citacoes    = citacoes,
                 legislacao  = laws,
-#                similares   = similares,
+                similaresTexto   = similaresRaw,
+                similares   = similares,
                 legislacaoTexto  = lawsRaw,
                 index       = self.fIndex,
                 notas       = notas,

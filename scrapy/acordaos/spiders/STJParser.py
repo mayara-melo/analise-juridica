@@ -14,7 +14,8 @@ class STJParser( AcordaoParser):
         return self.normalizeId( acId.strip())
 
     def normalizeId( seld, Id):
-        normId = re.sub( r"\s*[nN][oOaA][sS]?\s*",' ', Id.strip())
+        normId = re.sub( r"(\s+[n][oa][s]?\s+)(?=\w*)",' ', Id.strip(), flags=re.IGNORECASE)
+        normId = re.sub( r"\s+",' ', normId, flags=re.IGNORECASE)
         return normId.upper().strip()
         
     def parseUfShort( self, text):
@@ -50,9 +51,17 @@ class STJParser( AcordaoParser):
     def parseAcordaoQuotes( self, sel):
         possQuotes =[]
         quotes = []
-        linkedQuotes = sel.xpath('./pre/a/text()').extract()
-        for l in linkedQuotes:
-            quotes.append( self.normalizeId( l.upper()))
+        linksRaw = sel.xpath('./pre/a/text()').extract()
+        links = [] 
+        #joins quotes separated by html format (<br>)
+        firstPart = ''
+        for i,l in enumerate(linksRaw):
+            if re.match(r"^.* n[ao]s?$", l, flags=re.IGNORECASE):
+                firstPart = l.strip()+" "
+            else:
+                link = firstPart + l.strip()
+                quotes.append( self.normalizeId( link.upper()))
+                firstPart =''
         otherQuotes = sel.xpath( "./pre/text()").extract()
         otherQuotes.append("dummy")
         for line in otherQuotes:
@@ -93,36 +102,28 @@ class STJParser( AcordaoParser):
             similar.append(dict(similarAcordao))
         return( similar)
 
-    def parseLawDescription( self, text):
-        if re.match( "\s*(PAR|INC|ART|CAP|LET).*", text):
-            return ""
-        return text.strip()
-        
     def parseLaws( self, text):    
         laws = []
         law = {}
         refs = {}
         lawLines = []
-        text = text.replace('\r', ' ')
-        lines = text.split("\n")
-        for l in lines:
+        for l in text:
             l = l.encode("utf-8").upper()
             if l.startswith("LEG"):
                 if lawLines:
                     description = self.parseLawDescription( lawLines[0])
                     if description:
+                        lawLines = lawLines[1:]
                         law["descricao"] = description
                     law["refs"] = self.parseLawReferences( ''.join( lawLines))
-                    laws.append( law)
-                    law = {}
-                    lawLines = [] 
+                laws.append( law)
+                law = {}
+                lawLines = [] 
                 law["descricao"] = ""
                 law["refs"] = []
                 law["sigla"] = self.getMatchText( l, r"\s*LEG[-:]\w+\s+([^\s]+).*")
                 law["tipo"] = self.getMatchText( l, r"\s*LEG[-:](\w+).*")
                 law["ano"] = self.getMatchText( l, r".*ANO[-:](\d+).*")
-            elif l.startswith('***'):
-                law["descricao"] = l
             else:
                 lawLines.append( " "+l.strip())
         #append last law
@@ -130,13 +131,31 @@ class STJParser( AcordaoParser):
             if lawLines:
                 description = self.parseLawDescription( lawLines[0])
                 law["descricao"] = description
+                if description:
+                    lawLines = lawLines[1:]
             law["refs"] = self.parseLawReferences( ''.join( lawLines))
             laws.append( law)
         return laws
 
-
-
-
+    def parseSimilarAcordaos( self, similarsRawLst):
+        similars = []
+        dataJulg = uf = Id = ''
+        for s in similarsRawLst:
+            match = re.match( r"([\w\s]+\d+)\s+(\w+)\s.*", s)
+            if match:
+                Id = self.normalizeId( match.group(1).strip())
+                uf = match.group(2)
+            match = re.search( "DECIS\xc3+O:\s*([\d\/]+)", s, flags=re.IGNORECASE)
+            if match:
+                data = match.group(1)
+                print data
+                data = re.split(r'[\/\-]', data) 
+                if len(data)>2:
+                    dataJulg = datetime( int(data[2]), int(data[1]), int(data[0]))
+            if Id:
+                similarAc = {"acordaoId": Id, "localSigla": uf, "dataJulg":dataJulg, "relator":"", "orgaoJulg":""}
+                similars.append(dict(similarAc))
+        return( similars)
 
     def printLaw( self, law):
         print '-------------------------------------------------------------'

@@ -13,7 +13,7 @@ class AcordaoParser():
         return self.getMatchText( text, '.*\/.*-\s*(.*)').upper().strip()
 
     def parseType( self, acordaoId):
-        return re.sub( 'd+\s*', '', acordaoId).strip()
+        return re.sub( '\d+\s*', '', acordaoId).strip()
 
     def parseTags( self, text):
         tags = []
@@ -112,7 +112,8 @@ class AcordaoParser():
     def parseLawDescription( self, text):
         if re.match( "\s*(PAR|INC|ART|CAP|LET).*", text):
             return ""
-        return text.strip()
+        desc = re.sub("[\*]+", '', text)
+        return desc.strip()
         
     def parseLaws( self, text):    
         laws = []
@@ -130,9 +131,9 @@ class AcordaoParser():
                         law["descricao"] = description
                         lawLines.pop()
                     law["refs"] = self.parseLawReferences( ''.join( lawLines))
-                    laws.append( law)
-                    law = {}
-                    lawLines = [] 
+                laws.append( law)
+                law = {}
+                lawLines = [] 
                 law["descricao"] = ""
                 law["refs"] = []
                 law["sigla"] = self.getMatchText( l, r"\s*LEG[-:]\w+\s+([^\s]+).*")
