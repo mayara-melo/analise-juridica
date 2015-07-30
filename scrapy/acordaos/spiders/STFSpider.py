@@ -72,7 +72,7 @@ class STFSpider(BaseSpider):
         headers = doc.xpath('p/strong/text()').extract()[ len( docHeader)+1:-1]
         bodies  = doc.xpath('pre/text()').extract()[1:]
         sections = zip( headers, bodies)
-        partesRaw  = self.getSectionBodyByHeader( "Parte", sections)
+        partesRaw  = self.getSectionBodyByHeader( "Parte", sections).encode("utf8")
         decision   = self.getSectionBodyByHeader( "Decis", sections)
         tagsRaw    = self.getSectionBodyByHeader( "Index", sections)
         lawsRaw    = self.getSectionBodyByHeader( "Legisla", sections)

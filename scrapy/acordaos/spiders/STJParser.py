@@ -148,7 +148,6 @@ class STJParser( AcordaoParser):
             match = re.search( "DECIS\xc3+O:\s*([\d\/]+)", s, flags=re.IGNORECASE)
             if match:
                 data = match.group(1)
-                print data
                 data = re.split(r'[\/\-]', data) 
                 if len(data)>2:
                     dataJulg = datetime( int(data[2]), int(data[1]), int(data[0]))

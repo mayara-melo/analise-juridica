@@ -29,7 +29,7 @@ class AcordaoParser():
         partes = []
         lines = text.split('\n')
         for l in lines:
-            if l.strip() and l.startswith(' '):
+            if l.strip() and l.startswith(' ') and partes:
                 partes[-1] = partes[-1]+ " "+l.strip()
             else:
                 partes.append( l)
@@ -39,13 +39,14 @@ class AcordaoParser():
 #            temp = l.split(:)
             temp = re.split('[:;]', l)
             if len(temp) < 2:
-                print 'temp:'
-                print temp  
-                print 'parte:'  
-                print l  
-                print 'partes:'
-                print partes  
-                print '------'  
+#                print 'temp:'
+#                print temp  
+#                print 'parte:'  
+#                print l  
+#                print 'partes:'
+#                print partes  
+#                print '------'  
+		continue
             t = temp[0].strip()
             n = temp[1].strip()
             tipo = self.extendAbv( t)
