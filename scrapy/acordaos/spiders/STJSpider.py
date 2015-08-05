@@ -193,7 +193,7 @@ class STJSpider(BaseSpider):
         for doc in doclist:
             yield self.parseDoc( doc)
             self.fIndex = self.fIndex + 1
-        nextPage = sel.xpath('//*[@id="navegacao"]/a[@class="iconeProximaPagina"]')
+        nextPage = sel.xpath('//*[@id="navegacao"][1]/a[@class="iconeProximaPagina"]')
         if nextPage:
             yield Request( urlparse.urljoin('http://www.stj.jus.br/',
                                             nextPage.xpath('@href').extract()[0]),
