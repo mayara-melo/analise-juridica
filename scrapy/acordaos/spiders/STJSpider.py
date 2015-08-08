@@ -42,7 +42,7 @@ class STJSpider(BaseSpider):
         file.write( str(self.iIndex))
         file.close()
 
-    def __init__ ( self, iDate, fDate, update):
+    def __init__( self, iDate, fDate, update):
         self.domain = 'stj.jus.br'
         self.start_urls = ["http://www.stj.jus.br/SCON/"]
         self.iDate = str(iDate).zfill(5)
@@ -114,28 +114,33 @@ class STJSpider(BaseSpider):
             citacoes = parser.parseAcordaoQuotes( obsSel) 
 
         return AcordaoItem(
-                cabecalho   = header,
                 acordaoId   = acordaoId,
                 acordaoType = parser.parseType( acordaoId),
                 localSigla  = localSigla,
+                local       = localSigla,
+                cabecalho   = header,
                 publicacao  = publicacao,
                 dataPublic  = dataPublic,
-                dataJulg    = dataJulg,
                 relator     = relator,
+                orgaoJulg   = "",
+                dataJulg    = dataJulg,
+                fontePublic = "",
                 ementa      = parser.removeExtraSpaces( ementa),
                 decisao     = parser.removeExtraSpaces( decisao),
-                resumo      = resumo,
-                doutrinas   = doutrinas,
-                tags        = tags,
-                observacao  = observacao,
                 citacoes    = citacoes,
                 legislacao  = laws,
-                similaresTexto   = similaresRaw,
-                similares   = similares,
                 legislacaoTexto  = lawsRaw,
+                observacao  = observacao,
+                doutrinas   = doutrinas,
+                resumo      = resumo,
+                tags        = tags,
+                partes      = "", 
+                partesTexto = "",
+                tribunal    = 'STJ',
                 index       = self.fIndex,
-                notas       = notas,
-                tribunal    = 'STJ'
+                notas       = notas
+                similaresTexto = similaresRaw,
+                similares   = similares,
         )
 
     def getSectionBodyByHeader( self, header, sectionsSel):
@@ -177,7 +182,10 @@ class STJSpider(BaseSpider):
  
     def parsePage( self, response):
         #inspect_response(response, self)
-        unicode(response.body.decode(response.encoding)).encode('utf-8')
+        try: 
+            unicode(response.body.decode(response.encoding)).encode('utf-8')
+        except exceptions.UnicodeDecodeError:
+            print "exception error"
         sel = Selector(response)
         doclist = sel.xpath(
             '/html/body/div[@id="divprincipal"]'+

@@ -24,7 +24,6 @@ class AcordaoItem(Item):
     partes      = Field()
     partesTexto = Field()
     tribunal    = Field()
-    orgaoJulg   = Field()
     index       = Field()
     notas       = Field()
     similaresTexto = Field()
