@@ -138,9 +138,9 @@ class STJSpider(BaseSpider):
                 partesTexto = "",
                 tribunal    = 'STJ',
                 index       = self.fIndex,
-                notas       = notas
+                notas       = notas,
                 similaresTexto = similaresRaw,
-                similares   = similares,
+                similares   = similares
         )
 
     def getSectionBodyByHeader( self, header, sectionsSel):

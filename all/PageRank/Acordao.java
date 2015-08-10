@@ -9,16 +9,18 @@ public class Acordao {
     private String relator;
     private String date;
     private String tribunal;
+    private Boolean virtual;
     private ArrayList<String> quotesIDs;
 
     public Double pageRank;
     public Double tempPageRank;
 
-    public Acordao(String id, String relator, String date, String tribunal, ArrayList<String> quotesIDs, Long numAcordaos ) {
+    public Acordao(String id, String relator, String date, String tribunal, ArrayList<String> quotesIDs, Boolean virtual, Long numAcordaos ) {
         this.id        = id;
         this.relator   = relator;
         this.date      = date;
         this.tribunal  = tribunal;
+        this.virtual  = virtual;
         this.quotesIDs = quotesIDs;
         this.pageRank  = 1/numAcordaos.doubleValue();
     }

@@ -24,17 +24,12 @@ public class GraphMaker {
     protected void makeGraph() {
 	    links.drop();
         total = acordaos.count();
-        for( int i = 1, step = 10000; i <= total; i += step){ 
-	        BasicDBObject query = new BasicDBObject(2);
-	        query.put("$gte", i);
-	        query.put("$lt", i+step);
-            DBCursor cursor = acordaos.find( new BasicDBObject("index",query));
-	        cursor.addOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
-            while( cursor.hasNext()) {
-    		    printProgress();
-                DBObject acordao = cursor.next();
-                processAcordao( acordaos, links, acordao);
-            }
+        DBCursor cursor = acordaos.find();
+	    cursor.addOption(com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT);
+        while( cursor.hasNext()) {
+    	    printProgress();
+            DBObject acordao = cursor.next();
+            processAcordao( acordaos, links, acordao);
         }
         System.out.println("\n");
     }
@@ -58,42 +53,48 @@ public class GraphMaker {
     private static void processAcordao( DBCollection acordaos, DBCollection links, DBObject acordao) {
             ArrayList<String> foundQuotes = new ArrayList<String>();
             ArrayList<String> similars = new ArrayList<String>();
+            String acordaoId = (String)acordao.get("acordaoId");
             BasicDBList quotes = (BasicDBList) acordao.get("citacoes");
-            BasicDBList similarAcordaos = (BasicDBList) acordao.get("acordaosSimilares");
+            BasicDBList similarAcordaos = (BasicDBList) acordao.get("similares");
             for( Object quote : quotes) {
                 BasicDBObject query = new BasicDBObject("acordaoId", (String)quote);
                 BasicDBObject foundQ = (BasicDBObject)acordaos.findOne(query);
                 if( foundQ != null) foundQuotes.add( (String)quote);
             }
             for( Object similar : similarAcordaos) {
-                DBObject similarAcordao = (DBObject)similar;
+                BasicDBObject similarAcordao = (BasicDBObject)similar;
                 String similarAcordaoId = (String)similarAcordao.get("acordaoId"); 
-                BasicDBObject query = new BasicDBObject("acordaoId", similarAcordaoId);
-                BasicDBObject found = (BasicDBObject)acordaos.findOne(query);
                 similars.add( (String)similarAcordaoId);
-                if( found != null) System.out.println("found similar "+similarAcordaoId);
-                else{
-                    BasicDBList similarAcordaoQuotes = new BasicDBList();
-                    similarAcordaoQuotes.add( acordao.get("acordaoId"));
-                    BasicDBObject alreadyInGraph = (BasicDBObject)acordaos.findOne( new BasicDBObject("id", similarAcordaoId));
-                    if( alreadyInGraph != null){
-                        similarAcordaoQuotes.addAll( alreadyInGraph.get("citacoes"));
+                //Verify if similar acordao is already in collection, if it's not insert it, otherwise update it
+                BasicDBObject query = new BasicDBObject("acordaoId", similarAcordaoId);
+                BasicDBObject isSimilarInCollection = (BasicDBObject)acordaos.findOne(query);
+                
+                BasicDBList similarToAcordaos = new BasicDBList();
+                similarToAcordaos.add( acordaoId);
+
+                if( isSimilarInCollection == null) { //not in collection
+                    BasicDBObject alreadyInGraph = (BasicDBObject)links.findOne( new BasicDBObject("id", similarAcordaoId));
+                    if( alreadyInGraph != null){ //if already inserted add previous similarities 
+                        similarToAcordaos.addAll( (BasicDBList)alreadyInGraph.get("acordaosSimilares"));
                     }
-                    BasicDBObject virtualLink = new BasicDBObject();
-                    virtualLink.append("id", similarAcordaoId);
-                    virtualLink.append("relator", acordao.get("relator"));
-                    virtualLink.append("data", acordao.get("dataJulg"));
-                    virtualLink.append("localSigla", acordao.get("localSigla"));
-                    virtualLink.append("virtual", true);
-                    virtualLink.append("citacoes",  similarAcordaoQuotes);
-                    links.save( virtualLink);
+                    similarAcordao.append("virtual", true);
+                    similarAcordao.append("acordaoId", similarAcordaoId);
+                    similarAcordao.append("localSigla", similarAcordao.get("localSigla"));
+                    similarAcordao.append("tribunal", acordao.get("tribunal"));
+                    similarAcordao.append("relator", similarAcordao.get("relator"));
+                    similarAcordao.append("data", similarAcordao.get("dataJulg"));
+                    similarAcordao.append("citacoes",  new BasicDBList());
                 }
+                similarAcordao.append("acordaosSimilares", similarToAcordaos);
+                links.save( similarAcordao);
             }
+/*            BasicDBObject link = (BasicDBObject) acordao;
+            link.append("acordaosSimilares", similars);
+            link.append("virtual", false);
+            links.insert( link);*/
             BasicDBObject link = new BasicDBObject("_id", acordao.get("_id"));
-            link.append("id", acordao.get("acordaoId"));
+            link.append("acordaoId", acordao.get("acordaoId"));
             link.append("localSigla", acordao.get("localSigla"));
-            link.append("ementa", acordao.get("ementa"));
-            link.append("decisao", acordao.get("decisao"));
             link.append("relator", acordao.get("relator"));
             link.append("data", acordao.get("dataJulg"));
             link.append("tribunal", acordao.get("tribunal"));
@@ -101,6 +102,6 @@ public class GraphMaker {
             link.append("citacoes", foundQuotes);
             link.append("virtual", false);
             link.append("acordaosSimilares", similars);
-            links.insert(link);
+            links.insert(link); 
     }
 }

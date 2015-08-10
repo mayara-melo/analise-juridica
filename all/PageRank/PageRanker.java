@@ -34,20 +34,18 @@ public class PageRanker{
         while( cursor.hasNext()) {
             DBObject acordaoObject = cursor.next();
             try {
-                String id           = acordaoObject.get("acordaoId").toString();
-        		String relator      = acordaoObject.get("relator").toString();
-		        String data         = acordaoObject.get("data").toString();
-                BasicDBList quotes  = (BasicDBList) acordaoObject.get("citacoes");
-		        String tribunal     = acordaoObject.get("tribunal").toString();
-                BasicDBList similar = (BasicDBList) acordaoObject.get("similarAcordaos");
+                String id          = acordaoObject.get("acordaoId").toString();
+        		String relator     = acordaoObject.get("relator").toString();
+		        String data        = acordaoObject.get("data").toString();
+		        Boolean virtual    = (Boolean) acordaoObject.get("virtual");
+                BasicDBList quotes = (BasicDBList) acordaoObject.get("citacoes");
+		        String tribunal    = acordaoObject.get("tribunal").toString();
                 ArrayList<String> quotesIDs = dbListToArrayListOfIDs( quotes);
-
-                Acordao acordao = new Acordao( id, relator, data, tribunal, quotesIDs, similar, numAcordaos);
+                Acordao acordao = new Acordao( id, relator, data, tribunal, quotesIDs, virtual, numAcordaos);
                 acordaos.put(id, acordao);
-
             } catch(NullPointerException ex) {
                 System.out.println("NULL POINTER EXCEPTION");
-                ex.printStackTrace();
+               ex.printStackTrace();
             }
         }
         for (Acordao acordao : acordaos.values()) {
@@ -91,7 +89,7 @@ public class PageRanker{
         for (Acordao acordao : acordaos.values()) {
             pageRanks.put( acordao.getID(), acordao.pageRank);
         }
-	return pageRanks;
+	    return pageRanks;
     }
 
     private HashMap<String, Double> updatePageRanks(){
@@ -115,19 +113,19 @@ public class PageRanker{
     private void insertPageRanksInCollection( DBCollection pageRanked){
         pageRanked.drop();
         for (Acordao acordao : acordaos.values()) {
-            BasicDBObject doc = new BasicDBObject();
-            doc.append("id", acordao.getID());
-            doc.append("relator", acordao.getRelator());
-            doc.append("pageRank", acordao.pageRank);
+            BasicDBObject doc = (BasicDBObject) acordaos.findOne( new BasicDBObject("acordaoId", acordao.getId()));
+/*            doc.append("acordaoId", acordao.getID());
+            doc.append("relator", acordao.getRelator());*/
             ArrayList<String> quotingAcordaos = new ArrayList<String>();
             for (Acordao quoting : acordao.isQuotedBy) {
                 quotingAcordaos.add(quoting.getID());
             }
-            doc.append("isQuotedBy", quotingAcordaos);
             ArrayList<String> quotedAcordaos = new ArrayList<String>();
             for (Acordao quoted : acordao.quotes) {
                 quotedAcordaos.add(quoted.getID());
             }
+            doc.append("pageRank", acordao.pageRank);
+            doc.append("isQuotedBy", quotingAcordaos);
             doc.append("quotes", quotedAcordaos);
             pageRanked.insert(doc);
         }
@@ -153,27 +151,27 @@ public class PageRanker{
         return sum;
     }
 
-    private double pageRankSum( Acordao acordao, Integer mode, Boolean considerVirtualAcordaos){
+    private double pageRankSum( Acordao acordao, Integer mode){
         Double sum = 0.0;
-        Integer l = 1
+        Integer l = 1;
         for(Acordao quotingAcordao : acordao.isQuotedBy) {
             Double pr = quotingAcordao.pageRank;
             if( mode == 1) l =  quotingAcordao.quotes.size();
             Double term = pr/l;
             sum += term;
         }
-        if( considerVirtualAcordaos)
-            sum += acordao.similarAcordaos.size/acordao;
+//        if( considerVirtualAcordaos)
+  //          sum += acordao.similarAcordaos.size/acordao;
         return sum;
     }
     
-    protected void calculatePageRanks( Integer mode, Boolean considerVirtualAcordaos) throws UnknownHostException {
+    protected void calculatePageRanks( Integer mode) throws UnknownHostException {
 
 	    HashMap<String, Double> pageRanks = initPageRanks();
 	    Integer rounds = 0;
         while(true) {
             for (Acordao acordao : acordaos.values()) {
-                Double sum = pageRankSum( mode, acordao.isQuotedBy, considerVirtualAcordaos);
+                Double sum = pageRankSum( acordao, mode);
                 acordao.tempPageRank = ((1 - d) / n) + (d * sum);
             }
 	        HashMap<String, Double> newPageRanks = updatePageRanks();
