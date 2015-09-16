@@ -41,23 +41,31 @@ def mergeDictsSets( h1, h2):
         if k in h1:
             h1[k] = h1[k].union( h2[k])
     return h1
-
-graphMaker = GraphMaker( dbName, collectionInName, collectionOutName)
-pageRanker = PageRanker()
-t1 = datetime.now()
-[acordaos, quotes, quotedBy, similars] = graphMaker.buildDicts( query)
-print "build dicts time %d" % (datetime.now() - t1).seconds
-#pageRanks = pageRanker.calculatePageRanks( acordaos, quotes, quotedBy, pageRankMode)
-t1 = datetime.now()
-[quotes, quotedBy] = graphMaker.removeInvalidAcordaosFromDicts( acordaos, quotes, quotedBy)
-print "remove invalid acordaos from dicts %d" % (datetime.now() - t1).seconds
-t1 = datetime.now()
-quotesPlusSimilars = mergeDictsSets( quotes, similars) 
-quotedByPlusSimilars = mergeDictsSets( quotedBy, similars) 
-print "merge quotes with similars %d" % (datetime.now() - t1).seconds
-t1 = datetime.now()
-pageRanks = pageRanker.calculatePageRanks( acordaos, quotesPlusSimilars, quotedByPlusSimilars, pageRankMode)
-print "calculate page ranks %d" % (datetime.now() - t1).seconds
-t1 = datetime.now()
-graphMaker.insertNodes( acordaos, quotes, quotedBy, similars, pageRanks)
-print "insert nodes %d" % (datetime.now() - t1).seconds
+try:
+    graphMaker = GraphMaker( dbName, collectionInName, collectionOutName)
+    pageRanker = PageRanker()
+    tini = t1 = datetime.now()
+    [acordaos, quotes, quotedBy, similars] = graphMaker.buildDicts( query)
+    with open('graphPageRankingLog', 'a') as f:
+        f.write( "build dicts time %d\n" % (datetime.now() - t1).seconds)
+    #pageRanks = pageRanker.calculatePageRanks( acordaos, quotes, quotedBy, pageRankMode)
+    t1 = datetime.now()
+    [quotes, quotedBy] = graphMaker.removeInvalidAcordaosFromDicts( acordaos, quotes, quotedBy)
+    with open('graphPageRankingLog', 'a') as f:
+        f.write("remove invalid acordaos from dicts %d\n" % (datetime.now() - t1).seconds)
+    t1 = datetime.now()
+    quotesPlusSimilars = mergeDictsSets( quotes, similars) 
+    quotedByPlusSimilars = mergeDictsSets( quotedBy, similars) 
+    with open('graphPageRankingLog', 'a') as f:
+        f.write("merge quotes with similars %d\n" % (datetime.now() - t1).seconds)
+    t1 = datetime.now()
+    pageRanks = pageRanker.calculatePageRanks( acordaos, quotesPlusSimilars, quotedByPlusSimilars, pageRankMode)
+    with open('graphPageRankingLog', 'a') as f:
+        f.write("calculate page ranks %d\n" % (datetime.now() - t1).seconds)
+    t1 = datetime.now()
+    graphMaker.insertNodes( acordaos, quotes, quotedBy, similars, pageRanks)
+    with open('graphPageRankingLog\n', 'a') as f:
+        f.write("insert nodes %d" % (datetime.now() - t1).seconds)
+except Exception as e:
+    with open('graphPageRankingLog\n', 'a') as f:
+        f.write("%d: %s"%( (datetime.now()-tini).seconds, e))

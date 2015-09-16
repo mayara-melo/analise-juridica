@@ -17,6 +17,7 @@ class PageRanker:
         totalSum = 0.0
         for docId, p in pMap.items():
             q = qMap[ docId]
+#            print "diff %f" % (p-q)
             term = math.pow( (p-q) , 2)
             totalSum += term
         dist = math.sqrt( totalSum)
@@ -58,21 +59,29 @@ class PageRanker:
         if mode == 2:
             prSumFunc = self.__pageRank2sum
         quotesLen = self.__lengthArray( quotes)
+        t1 = datetime.now()
         while( True):
-            t1 = datetime.now()
-            for docId in acordaos:
-                quotingAcordaos = quotedBy.get( docId, [])
-                totalSum = prSumFunc( quotingAcordaos, pageRanks, quotesLen)
-                newPageRanks[docId] = ((Decimal(1.0) - d) / Decimal(nDocs)) + (d * totalSum)
+            try:
+                prSum = Decimal(0)
+                for docId in acordaos:
+                    quotingAcordaos = quotedBy.get( docId, [])
+                    totalSum = prSumFunc( quotingAcordaos, pageRanks, quotesLen)
+                    newPr = ((Decimal(1.0) - d) / Decimal(nDocs)) + (d * totalSum)
+                    newPageRanks[docId] = newPr
+                    prSum += newPr
+                for docId in newPageRanks:
+                    pr = newPageRanks[docId]
+                    newPageRanks[docId] = pr/prSum
   #          print "calculando pr %d" % ((datetime.now()-t1).microseconds)
-            rounds += 1
-            t1 = datetime.now()
-            if( self.__euclidianDistance( pageRanks, newPageRanks) < epsilon):
-                break
+                rounds += 1
+                if( self.__euclidianDistance( pageRanks, newPageRanks) < epsilon):
+                    return newPageRanks
  #           print "euclidian distande %d" % ((datetime.now()-t1).seconds)
-            pageRanks.clear()
-            t1 = datetime.now()
-            pageRanks = newPageRanks.copy()
+                pageRanks.clear()
+                pageRanks = newPageRanks.copy()
 #            print "copying newpr %d" % ( (datetime.now()-t1).seconds)
-     	print("rounds: %d" % rounds)
-        return pageRanks
+            except Exception as e:
+                with open('pageRankerReport', 'ab') as f:
+                    f.write('%d: %s' %((datetime.now()-t1).microseconds, e))
+            print("rounds: %d" %(rounds))
+            return pageRanks
