@@ -90,7 +90,11 @@ class GraphMaker():
             self.__printProgress()
             if i >= insertStep:
                 self.collectionOut.insert( docs2Insert)
+                docs2Insert = []
                 i = 0
+        if i > 0:
+            self.collectionOut.insert( docs2Insert)
+        
 
     def addAcordaosSimilaresNormalizados( self, collection, collectionOut):
         for acordao in collection.find( no_cursor_timeout=False):
