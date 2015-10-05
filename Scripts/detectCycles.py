@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pymongo import MongoClient
+from datetime import datetime
 #from pymongo import pymongo.ASCENDING
 import sys
 client = MongoClient('localhost', 27017)
@@ -46,7 +47,7 @@ def FloydWarshallWithPathReconstruction( nTotal):
                 if pathLength( i,j) > pathLength( i, k) + pathLength(k,j):
                     setPathLength( i, j, pathLength( i, k) + pathLength( k, j))
             printProgress()
-        printLinks()
+       # printLinks()
 #                    path[i][j].clear()
  #                   next[i][j].push_back(k) // assuming its a c++ vector
 #                elif pathLength( i,k) + pathLength( k,j) == pathLength(i,j) and k != j and k != i:
@@ -124,6 +125,16 @@ print "indexing acordaos"
 nTotal = indexAcordaos()
 onePercent = nTotal/100
 print "floyd warshall"
-FloydWarshallWithPathReconstruction( nTotal)
+try:
+    FloydWarshallWithPathReconstruction( nTotal)
+except Exception as ex:
+    with open('cicloReport', 'w') as f:
+        f.write("erro floydWarshall as %s: %s" %(datetime.now(), ex))
+    exit() 
 print "findind cycle"
-findCycle()
+try:
+    findCycle()
+except Exception as ex:
+    with open('cicloReport', 'a') as f:
+        f.write("erro no findCycle as %s: %s" %(datetime.now(), ex))
+
