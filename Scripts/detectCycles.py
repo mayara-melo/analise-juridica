@@ -7,7 +7,7 @@ from datetime import datetime
 import sys
 client = MongoClient('localhost', 27017)
 db = client.DJs
-collection = db['stfPR1']
+collection = db['all_pr1']
 count = progress = 0
 onePercent = collection.count()/100
 #for acordao in collection.find():
@@ -36,7 +36,7 @@ def setPathLength( nodeFrom, nodeTo, length):
 
 def FloydWarshallWithPathReconstruction( nTotal):
     for k in range(1,K):
-        print "k: %d" %k
+       # print "k: %d" %k
         for i in range( nTotal):
             for j in range( nTotal):
 #                pathI2J = [i]
@@ -46,7 +46,7 @@ def FloydWarshallWithPathReconstruction( nTotal):
  #                   pathI2J.append( path( i,k).extend)
                 if pathLength( i,j) > pathLength( i, k) + pathLength(k,j):
                     setPathLength( i, j, pathLength( i, k) + pathLength( k, j))
-            printProgress()
+       #     printProgress()
        # printLinks()
 #                    path[i][j].clear()
  #                   next[i][j].push_back(k) // assuming its a c++ vector
@@ -58,12 +58,16 @@ def FloydWarshallWithPathReconstruction( nTotal):
 
 def findCycle():
     global links
+    nCiclos = 0
     for node, nodeLinks in links:
         if node in nodeLinks:
             tamCycle = nodeLinks[ node]
             if tamCycle > 1:
-                with open('ciclos detectados', 'a') as f:
+                nCiclos += 1
+                with open('ciclosDetectados', 'a') as f:
                     f.write("ciclo tam %d\n" % tamCycle)
+    with open("ciclosDetectados", "a") as f:
+        f.write("%d ciclos encontrados" % nCiclos)
 
 def printLinks():
     global links
