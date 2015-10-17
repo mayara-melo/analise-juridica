@@ -3,83 +3,52 @@
 
 from pymongo import MongoClient
 from datetime import datetime
-#from pymongo import pymongo.ASCENDING
 import sys
-client = MongoClient('localhost', 27017)
-db = client.DJs
-collection = db['stfPR1']
-count = progress = 0
-onePercent = collection.count()/100
-#for acordao in collection.find():
-#    print acordao.relator
 
-#path = [[float("inf") for x in range(n+1)] for x in range(n+1)] 
-
-i = 1
-links = {}
-K = int(sys.argv[1])
-
-
-def addLink( nodeFrom, nodeTo, pathLength):
-    global links
-    if nodeFrom not in links:
+def addLink( nodeFrom, nodeTo, pathLength, links):
+    iif nodeFrom not in links:
         links[ nodeFrom] = {}
     links[ nodeFrom][ nodeTo] = pathLength
 
-def pathLength( nodeFrom, nodeTo):
-    global links
-    nodesTo = links.pop( nodeFrom, {})
-    return nodesTo.pop( nodeTo, float('inf'))
+def pathLength( nodeFrom, nodeTo, links):
+    nodesTo = links.get( nodeFrom, {})
+    return nodesTo.get( nodeTo, float('inf'))
 
-def setPathLength( nodeFrom, nodeTo, length):
+def setPathLength( nodeFrom, nodeTo, length, links):
     links[ nodeFrom][ nodeTo] = length
 
-def FloydWarshallWithPathReconstruction( nTotal):
+def FloydWarshallWithPathReconstruction( nTotal, links):
     for k in range(1,K):
-        print "k: %d" %k
-        for i in range( nTotal):
-            for j in range( nTotal):
-#                pathI2J = [i]
-#                i = docI["index"]
- #               j = docJ["index"]
-#                if pathLength( i,k) > 0 and pathLength(k,j) > 0:
- #                   pathI2J.append( path( i,k).extend)
-                if pathLength( i,j) > pathLength( i, k) + pathLength(k,j):
-                    setPathLength( i, j, pathLength( i, k) + pathLength( k, j))
-            printProgress()
-       # printLinks()
-#                    path[i][j].clear()
- #                   next[i][j].push_back(k) // assuming its a c++ vector
-#                elif pathLength( i,k) + pathLength( k,j) == pathLength(i,j) and k != j and k != i:
- #                   print k
-  #                  next[i][j].push_back(k)
+        for i in range( 1,nTotal+1):
+            for j in range( 1,nTotal+1):
+                ij = pathLength( i,j, links) 
+                ik = pathLength( i,k, links)
+                kj = pathLength( k,j, links)
+                ikj = ik + kj
+                if ij > ikj:
+                    setPathLength( i, j, ikj, links)
+        printProgress()
 
-#links = {nodeFrom: {nodeTo: [path1, path2, ...]}  }
-
-def findCycle():
-    global links
-    for node, nodeLinks in links:
+def findCycle(links):
+    count = 0
+    for node, nodeLinks in links.items():
         if node in nodeLinks:
             tamCycle = nodeLinks[ node]
             if tamCycle > 1:
-                with open('ciclos detectados', 'a') as f:
+                count +=1
+                with open('ciclosDetectados', 'a') as f:
                     f.write("ciclo tam %d\n" % tamCycle)
+    with open('ciclosDetectados', 'a') as f:
+        f.write("%d ciclos encontrados\n" %count)
 
-def printLinks():
-    global links
+def printLinks(links):
     with open("cicloprint", "a") as f:
         for i, s in links.items():
             f.write( "%d: " %i)
-            for q,l in s.item():
+            for q,l in s.items():
                 f.write( "(%d: %d) " % (q, l))
+            f.write( "\n")
             
-#def indexAcordaos():
-#    i = 1
-#    for acordao in collection.find():
-#        acordao['index'] = i
- #       collection.save( acordao)
-  #      i += 1
-   # return i
 def printProgress():
     global count
     global progress
@@ -93,9 +62,10 @@ def printProgress():
         sys.stdout.flush()
 
 
-def indexAcordaos():
-    global acordaosIdIndexes
+def indexAcordaos( collection):
     i = 1
+    acordaosIdIndexes = {}
+    links = {}
     for acordao in collection.find():
         acordaoId = acordao['acordaoId']
         if acordaoId not in acordaosIdIndexes:
@@ -105,36 +75,49 @@ def indexAcordaos():
             if quoteId not in acordaosIdIndexes:
                 acordaosIdIndexes[ quoteId] = i
                 i+=1
-            addLink( i, acordaosIdIndexes[quoteId], 1)
-    return i
+            addLink( i, acordaosIdIndexes[quoteId], 1, links)
+    return [acordaosIdIndexes,links]
 
-#def initialLinks():
- #   for Id, i in acordaosIdIndexes:
-  #      acordao = collection.find({'acordaoId': Id}):
-   #     for quotes in acordao['quotes']:
-#            addLink( i, acordaosIdIndexes[],1)
+def teste():
+    links = {}
+    links[1] = {3:-2}
+    links[2] = {1:4, 3:3}
+    links[3] = {4:2}
+    links[4] = {2:-1}
+    return links
 
-acordaosIdIndexes = {}
-#for acordao in collection.find():
- #   for quote in acordao["citacoes"]:
-#        i = acordao["index"]
- #       j = quote["index"]
-  #      addLink( i, j, 1)
+i = 1
+K = int(sys.argv[1])
+client = MongoClient('localhost', 27017)
+db = client.acordaos
+collection = db['stf']
+count = progress = 0
+onePercent = collection.count()/100
 
 print "indexing acordaos"
-nTotal = indexAcordaos()
+[acordaosIdIndexes, links] = indexAcordaos(collection)
+nTotal = len(acordaosIdIndexes)
+#nTotal = 4
+#links = teste()
 onePercent = nTotal/100
+
 print "floyd warshall"
 try:
-    FloydWarshallWithPathReconstruction( nTotal)
+    FloydWarshallWithPathReconstruction( nTotal, links)
 except Exception as ex:
     with open('cicloReport', 'w') as f:
         f.write("erro floydWarshall as %s: %s" %(datetime.now(), ex))
     exit() 
 print "findind cycle"
 try:
-    findCycle()
+    findCycle(links)
 except Exception as ex:
     with open('cicloReport', 'a') as f:
-        f.write("erro no findCycle as %s: %s" %(datetime.now(), ex))
-
+        f.write("erro no findCycle %s: %s" %(datetime.now(), ex))
+    exit()
+try:
+    printLinks(links)
+except Exception as ex:
+    with open('cicloReport', 'a') as f:
+        f.write("erro em printLinks %s: %s" %(datetime.now(), ex))
+    exit()
