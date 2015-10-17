@@ -89,8 +89,8 @@ def teste():
 i = 1
 K = int(sys.argv[1])
 client = MongoClient('localhost', 27017)
-db = client.acordaos
-collection = db['stf']
+db = client.DJs
+collection = db['all_pr1']
 count = progress = 0
 onePercent = collection.count()/100
 
