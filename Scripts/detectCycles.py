@@ -20,36 +20,21 @@ def setPathLength( nodeFrom, nodeTo, length, links):
 
 def FloydWarshallWithPathReconstruction( nTotal, links):
     nIsOdd = nTotal%2
-    for k in range(1,K):
-        print '---------------\nk: %d' %k
+    for k in range(1,nTotal+1):
+        #print 'k--: %d' %k
         for i in range( 1,nTotal+1):
-            #for j in range( 1,nTotal+1):
             ik = pathLength( i,k, links)
-            #print 'i: %d' %i
-            #nodesFromK = links.get( K, {})
-            #for nodeJ in nodesFromK:
-            for j in range( 1,nTotal+1, 2):
-              #  print 'j: %d' %j
+            nodesFromK = links.get( k, {})
+            for j in nodesFromK:
                 ij = pathLength( i,j, links) 
-                kj = pathLength( k,j, links)
+                kj = nodesFromK.get(j)
                 ikj = ik + kj
+#                if i == 6007 and j == 6005:
+ #                   print "%d - %d - %d\n" %(i,k,j)
+  #                  print "%d - %d - %d\n" %(i,k,j)
                 if ij > ikj:
                     setPathLength( i, j, ikj, links)
                     ik = pathLength( i,k, links)
-            #    print 'j: %d' %(j+1)
-                ij = pathLength( i,j+1, links) 
-                kj = pathLength( k,j+1, links)
-                ikj = ik + kj
-                if ij > ikj:
-                    setPathLength( i, j+1, ikj, links)
-                    ik = pathLength( i,k, links)
-            if nIsOdd:
-             #   print 'j: %d' %nTotal
-                ij = pathLength( i,nTotal, links) 
-                kj = pathLength( k,nTotal, links)
-            	ikj = ik + kj
-            	if ij > ikj:
-                    setPathLength( i, nTotal, ikj, links)
         printProgress()
 
 def findCycle(links, maxCiclo):
@@ -111,12 +96,11 @@ def teste():
     links[4] = {2:-1}
     return links
 
-
 i = 1
 K = int(sys.argv[1])
 client = MongoClient('localhost', 27017)
-db = client.acordaos
-collection = db['stf']
+db = client.DJs
+collection = db['all-pr1']
 count = progress = 0
 onePercent = collection.count()/100
 
