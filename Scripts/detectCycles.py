@@ -18,23 +18,24 @@ def pathLength( nodeFrom, nodeTo, links):
 def setPathLength( nodeFrom, nodeTo, length, links):
     links[ nodeFrom][ nodeTo] = length
 
-def FloydWarshallWithPathReconstruction( nTotal, links):
-    nIsOdd = nTotal%2
+def FloydWarshallWithPathReconstruction( nTotal, links, maxCycleLen):
+    inf = float('inf')
     for k in range(1,nTotal+1):
-        #print 'k--: %d' %k
+        print 'k--: %d' %k
         for i in range( 1,nTotal+1):
             ik = pathLength( i,k, links)
-            nodesFromK = links.get( k, {})
-            for j in nodesFromK:
-                ij = pathLength( i,j, links) 
-                kj = nodesFromK.get(j)
-                ikj = ik + kj
+            if ik < maxCycleLen:
+                nodesFromK = links.get( k, {})
+                for j in nodesFromK:
+                    ij = pathLength( i,j, links) 
+                    kj = nodesFromK.get(j)
+                    ikj = ik + kj
 #                if i == 6007 and j == 6005:
  #                   print "%d - %d - %d\n" %(i,k,j)
   #                  print "%d - %d - %d\n" %(i,k,j)
-                if ij > ikj:
-                    setPathLength( i, j, ikj, links)
-                    ik = pathLength( i,k, links)
+                    if ij > ikj and ikj <= maxCycleLen:
+                        setPathLength( i, j, ikj, links)
+                        ik = pathLength( i,k, links)
         printProgress()
 
 def findCycle(links, maxCiclo):
@@ -45,7 +46,7 @@ def findCycle(links, maxCiclo):
             if tamCycle > 1:
                 count +=1
                 with open('ciclosDetectados', 'a') as f:
-                    f.write("max ciclo:%d:\nciclo tam %d\n" %(maxCiclo, tamCycle))
+                    f.write("ciclo tam %d\n" %( tamCycle))
     with open('ciclosDetectados', 'a') as f:
         f.write("%d ciclos encontrados\n\n" %count)
 
@@ -76,16 +77,14 @@ def indexAcordaos( collection):
     i = 1
     acordaosIdIndexes = {}
     links = {}
-    for acordao in collection.find():
+    for acordao in collection.find({}, {'acordaoId':1}):
+        acordaosIdIndexes[acordao['acordaoId']] = i
+        i+=1 
+    for acordao in collection.find({}, {'acordaoId':1, 'citacoes':1}):
         acordaoId = acordao['acordaoId']
-        if acordaoId not in acordaosIdIndexes:
-            acordaosIdIndexes[acordaoId] = i
-            i+=1
         for quoteId in acordao['citacoes']:
-            if quoteId not in acordaosIdIndexes:
-                acordaosIdIndexes[ quoteId] = i
-                i+=1
-            addLink( i, acordaosIdIndexes[quoteId], 1, links)
+            if quoteId in acordaosIdIndexes:
+                addLink( acordaosIdIndexes[acordaoId], acordaosIdIndexes[quoteId], 1, links)
     return [acordaosIdIndexes,links]
 
 def teste():
@@ -99,8 +98,8 @@ def teste():
 i = 1
 K = int(sys.argv[1])
 client = MongoClient('localhost', 27017)
-db = client.DJs
-collection = db['all-pr1']
+db = client.acordaos
+collection = db['stf']
 count = progress = 0
 onePercent = collection.count()/100
 
@@ -113,7 +112,7 @@ onePercent = nTotal/100
 
 print "floyd warshall"
 try:
-    FloydWarshallWithPathReconstruction( nTotal, links)
+    FloydWarshallWithPathReconstruction( nTotal, links, K)
 except Exception as ex:
     print "exception"
     with open('cicloReport', 'w') as f:
