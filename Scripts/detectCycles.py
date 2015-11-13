@@ -3,6 +3,7 @@
 
 from pymongo import MongoClient
 from datetime import datetime
+from datetime import date
 import sys
 
 def addLink( nodeFrom, nodeTo, pathLength, links):
@@ -20,23 +21,32 @@ def setPathLength( nodeFrom, nodeTo, length, links):
 def FloydWarshallWithPathReconstruction( nTotal, links):
     nIsOdd = nTotal%2
     for k in range(1,K):
+        print '---------------\nk: %d' %k
         for i in range( 1,nTotal+1):
-            ik = pathLength( i,k, links)
             #for j in range( 1,nTotal+1):
-            for j in range( 1,(nTotal/2)+1, 2):
+            ik = pathLength( i,k, links)
+            #print 'i: %d' %i
+            #nodesFromK = links.get( K, {})
+            #for nodeJ in nodesFromK:
+            for j in range( 1,nTotal+1, 2):
+              #  print 'j: %d' %j
                 ij = pathLength( i,j, links) 
                 kj = pathLength( k,j, links)
                 ikj = ik + kj
                 if ij > ikj:
                     setPathLength( i, j, ikj, links)
+                    ik = pathLength( i,k, links)
+            #    print 'j: %d' %(j+1)
                 ij = pathLength( i,j+1, links) 
                 kj = pathLength( k,j+1, links)
                 ikj = ik + kj
                 if ij > ikj:
                     setPathLength( i, j+1, ikj, links)
-	    if nIsOdd:
-	    	ij = pathLength( i,nTotal, links) 
-            	kj = pathLength( k,nTotal, links)
+                    ik = pathLength( i,k, links)
+            if nIsOdd:
+             #   print 'j: %d' %nTotal
+                ij = pathLength( i,nTotal, links) 
+                kj = pathLength( k,nTotal, links)
             	ikj = ik + kj
             	if ij > ikj:
                     setPathLength( i, nTotal, ikj, links)
@@ -49,13 +59,13 @@ def findCycle(links, maxCiclo):
             tamCycle = nodeLinks[ node]
             if tamCycle > 1:
                 count +=1
-                with open('ciclosDetectados%s' %datetime.now(), 'a') as f:
+                with open('ciclosDetectados', 'a') as f:
                     f.write("max ciclo:%d:\nciclo tam %d\n" %(maxCiclo, tamCycle))
-    with open('ciclosDetectados%s' %(datetime.now()), 'a') as f:
+    with open('ciclosDetectados', 'a') as f:
         f.write("%d ciclos encontrados\n\n" %count)
 
 def printLinks(links):
-    with open("printLinks%s" %(datetime.now()), "a") as f:
+    with open("cicloLinks%s" %(datetime.now()), "a") as f:
         for i, s in links.items():
             f.write( "%d: " %i)
             for q,l in s.items():
@@ -71,7 +81,7 @@ def printProgress():
         count = 0
         progress += 1
 #            if not percentage % 10:
-        with open("cicloDetect%s" %(datetime.now())) as f:
+        with open("cicloDetectProgress", 'a') as f:
 	     f.write("\r%d%%-%s\n" %(progress, datetime.now()))
 	#sys.stdout.write("\r%d%%" % progress)
         #sys.stdout.flush()
@@ -101,18 +111,19 @@ def teste():
     links[4] = {2:-1}
     return links
 
+
 i = 1
 K = int(sys.argv[1])
 client = MongoClient('localhost', 27017)
-db = client.DJs
-collection = db['stf_pr1']
+db = client.acordaos
+collection = db['stf']
 count = progress = 0
 onePercent = collection.count()/100
 
 print "indexing acordaos"
 [acordaosIdIndexes, links] = indexAcordaos(collection)
-#links = teste()
 nTotal = len(acordaosIdIndexes)
+#links = teste()
 #nTotal = 4
 onePercent = nTotal/100
 
@@ -120,19 +131,24 @@ print "floyd warshall"
 try:
     FloydWarshallWithPathReconstruction( nTotal, links)
 except Exception as ex:
-    with open('cicloReportSTFfaster', 'w') as f:
+    print "exception"
+    with open('cicloReport', 'w') as f:
         f.write("erro floydWarshall as %s: %s" %(datetime.now(), ex))
     exit() 
 print "findind cycle"
 try:
-    findCycle(links)
+    findCycle(links, K)
 except Exception as ex:
-    with open('cicloReportSTFfaster', 'a') as f:
-        f.write("erro no findCycle %s: %s" %(datetime.now(), ex))
+    timeNow = datetime.now()
+    print "exception"
+    with open('cicloReport', 'a') as f:
+        f.write("erro no findCycle %s: %s" %(timeNow, ex))
     exit()
 try:
     printLinks(links)
 except Exception as ex:
-    with open('cicloReportSTFfaster', 'a') as f:
-        f.write("erro em printLinks %s: %s" %(datetime.now(), ex))
+    timeNow = datetime.now()
+    print "exception"
+    with open('cicloReport', 'a') as f:
+        f.write("erro em printLinks %s: %s" %(timeNow, ex))
     exit()
