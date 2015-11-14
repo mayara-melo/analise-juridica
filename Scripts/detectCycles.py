@@ -21,7 +21,8 @@ def setPathLength( nodeFrom, nodeTo, length, links):
 def FloydWarshallWithPathReconstruction( nTotal, links, maxCycleLen):
     inf = float('inf')
     for k in range(1,nTotal+1):
-        print 'k--: %d' %k
+#        print 'k--: %d' %k
+        #for i in range( 1,nTotal+1):
         for i in range( 1,nTotal+1):
             ik = pathLength( i,k, links)
             if ik < maxCycleLen:
@@ -30,23 +31,42 @@ def FloydWarshallWithPathReconstruction( nTotal, links, maxCycleLen):
                     ij = pathLength( i,j, links) 
                     kj = nodesFromK.get(j)
                     ikj = ik + kj
-#                if i == 6007 and j == 6005:
- #                   print "%d - %d - %d\n" %(i,k,j)
-  #                  print "%d - %d - %d\n" %(i,k,j)
                     if ij > ikj and ikj <= maxCycleLen:
                         setPathLength( i, j, ikj, links)
-                        ik = pathLength( i,k, links)
+#        for i in range( 1,nTotal+1):
+ #           ik = pathLength( i,k+1, links)
+  #          if ik < maxCycleLen:
+   #             nodesFromK = links.get( k+1, {})
+    #            for j in nodesFromK:
+     #               ij = pathLength( i,j, links) 
+      #              kj = nodesFromK.get(j)
+       #             ikj = ik + kj
+        #            if ij > ikj and ikj <= maxCycleLen:
+         #               setPathLength( i, j, ikj, links)
+          #              ik = pathLength( i,k+1, links)
+#           ik = pathLength( i+1,k+1, links)
+ #           if ik < maxCycleLen:
+  #              nodesFromK = links.get( k+1, {})
+   #             for j in nodesFromK:
+    #                ij = pathLength( i+1,j, links) 
+     #               kj = nodesFromK.get(j)
+      #              ikj = ik + kj
+       #             if ij > ikj and ikj <= maxCycleLen:
+        #                setPathLength( i+1, j, ikj, links)
+         #               ik = pathLength( i+1, k+1, links)
+
         printProgress()
 
-def findCycle(links, maxCiclo):
+def findCycle(links, maxCiclo, indexesByAcordaosIds):
     count = 0
+    acordaosIdsByIndexes = dict((v, k) for k, v in indexesByAcordaosIds.items())
     for node, nodeLinks in links.items():
         if node in nodeLinks:
             tamCycle = nodeLinks[ node]
             if tamCycle > 1:
                 count +=1
                 with open('ciclosDetectados', 'a') as f:
-                    f.write("ciclo tam %d\n" %( tamCycle))
+                    f.write("ciclo acordao %d-%s tam %d\n" %( node, acordaosIdsByIndexes[node], tamCycle))
     with open('ciclosDetectados', 'a') as f:
         f.write("%d ciclos encontrados\n\n" %count)
 
@@ -62,7 +82,7 @@ def printProgress():
     global count
     global progress
     global onePercent
-    count += 1
+    count += 3
     if count >= onePercent:
         count = 0
         progress += 1
@@ -98,8 +118,8 @@ def teste():
 i = 1
 K = int(sys.argv[1])
 client = MongoClient('localhost', 27017)
-db = client.acordaos
-collection = db['stf']
+db = client.DJs
+collection = db['all_pr1']
 count = progress = 0
 onePercent = collection.count()/100
 
@@ -120,7 +140,7 @@ except Exception as ex:
     exit() 
 print "findind cycle"
 try:
-    findCycle(links, K)
+    findCycle(links, K, acordaosIdIndexes)
 except Exception as ex:
     timeNow = datetime.now()
     print "exception"
